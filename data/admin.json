@@ -1,0 +1,40 @@
+{
+  "accountManagers": [
+    "Account Manager 1",
+    "Account Manager 2"
+  ],
+  "geoOptions": [
+    "US",
+    "EU",
+    "APAC"
+  ],
+  "osOptions": [
+    "iOS",
+    "Android"
+  ],
+  "category1Options": [
+    "Cat",
+    "Dog",
+    "Bird"
+  ],
+  "category2Options": [
+    "Cat",
+    "Dog",
+    "Bird"
+  ],
+  "category3Options": [
+    "Cat",
+    "Dog",
+    "Bird"
+  ],
+  "eventTypeOptions": [
+    "GOAL",
+    "ADD",
+    "INITIAL",
+    "PURCHASE"
+  ],
+  "pubReveSourceOptions": [
+    "IN EVENT NAME",
+    "IN POST BACK"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "accountManagers": [
+    "James",
+    "Jason",
+    "Marina",
+    "Zhaowen"
+  ],
+  "geo": [
+    "US",
+    "CA",
+    "AU",
+    "UK"
+  ],
+  "os": [
+    "iOS",
+    "Android"
+  ]
