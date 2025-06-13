@@ -658,3 +658,6 @@ select.floatingInput:not([value=""]) + .floatingLabel {
   margin-top: 2px;
   margin-left: 2px;
 }
+
+/* input[type="password"] { ... } */
+/* input[type="text"] { ... } */

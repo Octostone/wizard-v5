@@ -17,14 +17,19 @@ const initDataFile = () => {
   ensureDataDir();
   if (!fs.existsSync(dataFilePath)) {
     const initialData = {
-      accountManagers: ['Account Manager 1', 'Account Manager 2'],
-      geoOptions: ['US', 'EU', 'APAC'],
+      accountManagers: [
+        'James Pavelich',
+        'Jason Wolofsky',
+        'Mariana Levant',
+        'Zhaowen Shen'
+      ],
+      geoOptions: ['US', 'CA', 'UK', 'AU'],
       osOptions: ['iOS', 'Android'],
       category1Options: ['Cat', 'Dog', 'Bird'],
       category2Options: ['Cat', 'Dog', 'Bird'],
       category3Options: ['Cat', 'Dog', 'Bird'],
       eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
-      pubReveSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
+      pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
     };
     fs.writeFileSync(dataFilePath, JSON.stringify(initialData, null, 2));
     return initialData;
@@ -76,8 +81,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid eventTypeOptions data' }, { status: 400 });
     }
     
-    if (!data.pubReveSourceOptions || !Array.isArray(data.pubReveSourceOptions)) {
-      return NextResponse.json({ error: 'Invalid pubReveSourceOptions data' }, { status: 400 });
+    if (!data.pubRevSourceOptions || !Array.isArray(data.pubRevSourceOptions)) {
+      return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
     }
     
     // Save data

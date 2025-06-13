@@ -11,7 +11,12 @@ export default function ClearButton() {
   const handleClear = () => {
     if (window.confirm('Are you sure you want to clear all data and return to the landing page?')) {
       resetForm();
-      router.push('/');
+      // Use router.replace for a hard navigation, and fallback to reload if needed
+      try {
+        router.replace ? router.replace('/') : router.push('/');
+      } catch (e) {
+        window.location.href = '/';
+      }
     }
   };
 

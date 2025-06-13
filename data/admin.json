@@ -1,12 +1,15 @@
 {
   "accountManagers": [
-    "Account Manager 1",
-    "Account Manager 2"
+    "James Pavelich",
+    "Jason Wolofsky",
+    "Mariana Levant",
+    "Zhaowen Shen"
   ],
   "geoOptions": [
     "US",
-    "EU",
-    "APAC"
+    "CA",
+    "UK",
+    "AU"
   ],
   "osOptions": [
     "iOS",
@@ -33,7 +36,7 @@
     "INITIAL",
     "PURCHASE"
   ],
-  "pubReveSourceOptions": [
+  "pubRevSourceOptions": [
     "IN EVENT NAME",
     "IN POST BACK"
   ]

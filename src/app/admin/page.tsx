@@ -195,7 +195,7 @@ export default function AdminPage() {
   const [category2, setCategory2] = useState<string[]>([]);
   const [category3, setCategory3] = useState<string[]>([]);
   const [eventTypes, setEventTypes] = useState<string[]>(['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
-  const [pubReveSources, setPubReveSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
+  const [pubRevSources, setPubRevSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving'>('idle');
 
   // Fetch initial data from API
@@ -211,7 +211,7 @@ export default function AdminPage() {
           setCategory2(data.category2Options || ["Cat", "Dog", "Bird"]);
           setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
           setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
-          setPubReveSources(data.pubReveSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+          setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
         });
     }
   }, [isAuthed]);
@@ -229,7 +229,7 @@ export default function AdminPage() {
         category2Options: category2,
         category3Options: category3,
         eventTypeOptions: eventTypes,
-        pubReveSourceOptions: pubReveSources
+        pubRevSourceOptions: pubRevSources
       })
     });
     if (res.ok) {
@@ -299,7 +299,7 @@ export default function AdminPage() {
             <CrudManager label="Category 2" items={category2} setItems={setCategory2} />
             <CrudManager label="Category 3" items={category3} setItems={setCategory3} />
             <CrudManager label="Event Types" items={eventTypes} setItems={setEventTypes} />
-            <CrudManager label="Pub Reve Sources" items={pubReveSources} setItems={setPubReveSources} />
+            <CrudManager label="Pub Rev Sources" items={pubRevSources} setItems={setPubRevSources} />
           </div>
         )}
       </div>
