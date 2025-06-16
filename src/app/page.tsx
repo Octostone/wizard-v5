@@ -7,14 +7,32 @@ import { useFormContext } from "../context/FormContext";
 
 export default function Home() {
   const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { form, setField } = useFormContext();
 
   useEffect(() => {
-    fetch("/api/admin")
-      .then(res => res.json())
-      .then(data => setAccountManagers(data.accountManagers || []))
-      .catch(() => setAccountManagers([]));
+    const fetchAccountManagers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const res = await fetch("/api/admin");
+        if (!res.ok) {
+          throw new Error('Failed to fetch account managers');
+        }
+        const data = await res.json();
+        setAccountManagers(data.accountManagers || []);
+      } catch (err) {
+        console.error('Error fetching account managers:', err);
+        setError('Failed to load account managers. Please try refreshing the page.');
+        setAccountManagers([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAccountManagers();
   }, []);
 
   return (
@@ -28,15 +46,17 @@ export default function Home() {
               required
               value={form.accountManager}
               onChange={e => setField("accountManager", e.target.value)}
+              disabled={isLoading}
             >
               <option value="" disabled>
-                Account Manager*
+                {isLoading ? 'Loading...' : 'Account Manager*'}
               </option>
               {accountManagers.map((manager) => (
                 <option key={manager} value={manager}>{manager}</option>
               ))}
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>
+            {error && <div className={styles.error}>{error}</div>}
           </div>
           <input
             className={styles.input}

@@ -105,7 +105,6 @@ export default function AddAnApp() {
               value={form.storeUrl}
               onChange={e => setField("storeUrl", e.target.value)}
               onKeyDown={preventLineBreaks}
-              placeholder="Google Play Store or Apple App Store URL"
             />
             <label className={styles.floatingLabel}>Store URL</label>
           </div>
@@ -117,9 +116,8 @@ export default function AddAnApp() {
               value={form.retributionDays}
               onChange={handleRetributionDaysChange}
               onKeyDown={preventLineBreaks}
-              placeholder="Client's Retribution Window in Days"
             />
-            <label className={styles.floatingLabel}>Retribution Window</label>
+            <label className={styles.floatingLabel}>Retribution Window (Days)</label>
           </div>
 
           <div className={styles.formGroup}>

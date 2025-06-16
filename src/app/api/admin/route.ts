@@ -18,10 +18,10 @@ const initDataFile = () => {
   if (!fs.existsSync(dataFilePath)) {
     const initialData = {
       accountManagers: [
-        'James Pavelich',
-        'Jason Wolofsky',
-        'Mariana Levant',
-        'Zhaowen Shen'
+        'James',
+        'Jason',
+        'Marina',
+        'Zhaowen'
       ],
       geoOptions: ['US', 'CA', 'UK', 'AU'],
       osOptions: ['iOS', 'Android'],
@@ -31,10 +31,34 @@ const initDataFile = () => {
       eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
       pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
     };
-    fs.writeFileSync(dataFilePath, JSON.stringify(initialData, null, 2));
-    return initialData;
+    try {
+      fs.writeFileSync(dataFilePath, JSON.stringify(initialData, null, 2));
+      return initialData;
+    } catch (error) {
+      console.error('Error writing initial data file:', error);
+      return initialData; // Return the data even if we can't write it
+    }
   }
-  return JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
+  try {
+    return JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
+  } catch (error) {
+    console.error('Error reading data file:', error);
+    return {
+      accountManagers: [
+        'James',
+        'Jason',
+        'Marina',
+        'Zhaowen'
+      ],
+      geoOptions: ['US', 'CA', 'UK', 'AU'],
+      osOptions: ['iOS', 'Android'],
+      category1Options: ['Cat', 'Dog', 'Bird'],
+      category2Options: ['Cat', 'Dog', 'Bird'],
+      category3Options: ['Cat', 'Dog', 'Bird'],
+      eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
+      pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
+    };
+  }
 };
 
 export async function GET() {

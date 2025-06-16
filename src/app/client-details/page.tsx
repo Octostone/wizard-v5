@@ -46,6 +46,12 @@ export default function ClientDetails() {
     }
   };
 
+  // Get placeholder text based on netGross selection
+  const getGrossDeductionPlaceholder = () => {
+    if (!form.netGross) return "Percent to be deducted";
+    return form.netGross === "gross" ? "Insert value deducted here" : "No value needed";
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.centeredCard}>
@@ -103,12 +109,19 @@ export default function ClientDetails() {
               pattern="[0-9]*"
               value={form.grossDeduction}
               onChange={e => handleGrossDeductionChange(e.target.value)}
-              placeholder={form.netGross === "gross" ? "If Gross, enter value" : "If Net, no value"}
+              placeholder={getGrossDeductionPlaceholder()}
               required={form.netGross === "gross"}
               disabled={form.netGross !== "gross"}
               onFocus={handleGrossDeductionFocus}
             />
-            <label className={styles.floatingLabel}>% deducted</label>
+            <label className={styles.floatingLabel} style={{ 
+              top: '-0.5rem', 
+              left: '0.5rem', 
+              fontSize: '0.875rem', 
+              backgroundColor: 'white', 
+              padding: '0 0.25rem',
+              color: '#666'
+            }}>% deducted</label>
             {grossDeductionError && <div style={{ color: 'red', fontSize: 13, marginTop: 4 }}>{grossDeductionError}</div>}
           </div>
           {/* Base/CM */}
@@ -120,7 +133,7 @@ export default function ClientDetails() {
               onChange={e => setField("baseCM", e.target.value)}
             >
               <option value="" disabled>Is client passing base or CM values?</option>
-              <option value="base">base</option>
+              <option value="base">BASE</option>
               <option value="CM">CM</option>
             </select>
             <label className={styles.floatingLabel}>Base/CM</label>

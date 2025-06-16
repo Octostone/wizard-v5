@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from '../app/page.module.css';
 import { EventItem } from '../context/FormContext';
 import { useSortable } from '@dnd-kit/sortable';
@@ -17,6 +17,7 @@ interface EventRowItemProps {
   crPercentClass?: string;
   eventTypeClass?: string;
   pubRevSourceClass?: string;
+  isNewRow?: boolean;
 }
 
 export default function EventRowItem({
@@ -30,8 +31,17 @@ export default function EventRowItem({
   positions,
   crPercentClass = '',
   eventTypeClass = '',
-  pubRevSourceClass = ''
+  pubRevSourceClass = '',
+  isNewRow = false
 }: EventRowItemProps) {
+  const descriptionInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isNewRow && descriptionInputRef.current) {
+      descriptionInputRef.current.focus();
+    }
+  }, [isNewRow]);
+
   const {
     attributes,
     listeners,
@@ -119,6 +129,7 @@ export default function EventRowItem({
       
       <div className={styles.eventField}>
         <input
+          ref={descriptionInputRef}
           type="text"
           className={`${styles.eventFieldInput} ${styles.eventInputExtraLong}`}
           value={event.name}
@@ -153,7 +164,7 @@ export default function EventRowItem({
           className={`${styles.eventFieldInput} ${styles.eventInputMedium}`}
           value={event.estTTCMins}
           onChange={handleTTCChange}
-          placeholder="Est. TTC (Mins)"
+          placeholder="Est. TTC"
         />
       </div>
       
@@ -195,4 +206,4 @@ export default function EventRowItem({
       )}
     </div>
   );
-} 
+}

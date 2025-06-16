@@ -659,5 +659,12 @@ select.floatingInput:not([value=""]) + .floatingLabel {
   margin-left: 2px;
 }
 
+.error {
+  color: #d32f2f;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  margin-left: 0.5rem;
+}
+
 /* input[type="password"] { ... } */
 /* input[type="text"] { ... } */

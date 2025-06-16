@@ -14,6 +14,7 @@ export default function AddEvents() {
   const { form, setField } = useFormContext();
   const [eventTypes, setEventTypes] = useState<string[]>([]);
   const [pubReveSources, setPubReveSources] = useState<string[]>([]);
+  const [newRowId, setNewRowId] = useState<string | null>(null);
   
   // Get existing event positions
   const positions = form.events.map(event => event.position);
@@ -66,8 +67,9 @@ export default function AddEvents() {
   };
   
   const handleAddRow = () => {
+    const newId = `event-${Date.now()}`;
     const newEvent: EventItem = {
-      id: `event-${Date.now()}`,
+      id: newId,
       position: (form.events.length + 1).toString(),
       name: "",
       postbackEventName: "",
@@ -78,6 +80,7 @@ export default function AddEvents() {
     };
     
     setField('events', [...form.events, newEvent]);
+    setNewRowId(newId);
   };
   
   const handleDeleteRow = (index: number) => {
@@ -152,6 +155,7 @@ export default function AddEvents() {
                 crPercentClass={styles.eventInputCRPercent}
                 eventTypeClass={styles.eventInputEventType}
                 pubRevSourceClass={styles.eventInputPubRevSource}
+                isNewRow={event.id === newRowId}
               />
             ))}
           </SortableContext>

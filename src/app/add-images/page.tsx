@@ -18,7 +18,6 @@ function formatDatePrefix(type: string) {
 
 export default function AddImages() {
   const { form, setField } = useFormContext();
-  const [clientNames, setClientNames] = useState<string[]>([]);
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [iconError, setIconError] = useState<string>("");
   const [fillError, setFillError] = useState<string>("");
@@ -32,29 +31,21 @@ export default function AddImages() {
     fetch("/api/admin")
       .then(res => res.json())
       .then(data => {
-        setClientNames(data.flourishClientNames || []);
         setGeoOptions(data.geoOptions || []);
       })
       .catch(() => {
-        setClientNames([]);
         setGeoOptions([]);
       });
   }, []);
 
-  // Pre-populate fields from previous pages
+  // Pre-populate geo field
   useEffect(() => {
-    if (clientNames.length > 0) {
-      // If the current flourishClientName is not in the admin list, set to first admin value
-      if (!form.flourishClientName || !clientNames.includes(form.flourishClientName)) {
-        setField("flourishClientName", clientNames[0]);
-      }
-    }
     if (geoOptions.length > 0) {
       if (!form.geo || !geoOptions.includes(form.geo)) {
         setField("geo", geoOptions[0]);
       }
     }
-  }, [clientNames, geoOptions]);
+  }, [geoOptions]);
 
   // File validation
   const validateFile = (file: File) => {
@@ -99,17 +90,14 @@ export default function AddImages() {
         <form className={styles.form} autoComplete="off">
           {/* Flourish Client Name */}
           <div className={styles.formGroup}>
-            <select
+            <input
               className={styles.floatingInput}
+              type="text"
               required
               value={form.flourishClientName || ""}
               onChange={e => setField("flourishClientName", e.target.value)}
-            >
-              <option value="" disabled>Flourish Client Name*</option>
-              {clientNames.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
-            </select>
+              placeholder=" "
+            />
             <label className={styles.floatingLabel}>Flourish Client Name</label>
           </div>
           {/* App Name */}
