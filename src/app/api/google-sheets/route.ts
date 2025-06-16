@@ -1,9 +1,10 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
-import { OAuth2Client } from 'google-auth-library';
+
+// Use google.auth.OAuth2 for compatibility with googleapis
 
 // Initialize OAuth2 client
-const oauth2Client = new OAuth2Client(
+const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   process.env.GOOGLE_REDIRECT_URI
@@ -20,6 +21,16 @@ export async function POST(request: Request) {
       targetFolderId, 
       formData 
     } = body;
+
+    if (!TEMPLATE_SHEET_ID) {
+      throw new Error('TEMPLATE_SHEET_ID environment variable is not set');
+    }
+    if (!outputFileName) {
+      throw new Error('outputFileName is required');
+    }
+    if (!targetFolderId) {
+      throw new Error('targetFolderId is required');
+    }
 
     // Set credentials
     oauth2Client.setCredentials({
