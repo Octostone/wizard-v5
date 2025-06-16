@@ -668,3 +668,27 @@ select.floatingInput:not([value=""]) + .floatingLabel {
 
 /* input[type="password"] { ... } */
 /* input[type="text"] { ... } */
+
+.googleAuthButton {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: background-color 0.3s ease;
+}
+
+.googleAuthButton:hover {
+  background-color: #357abd;
+}
+
+.googleAuthButton:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
