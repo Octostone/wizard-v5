@@ -13,7 +13,7 @@ export default function AddCampaign() {
   const [pricingModels, setPricingModels] = useState<string[]>(["CPI", "Hybrid", "CPA"]);
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
   const router = useRouter();
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, any>>({});
   const [clickUrl, setClickUrl] = useState(form.clickUrl || "");
   const clickUrlRef = useRef<HTMLTextAreaElement>(null);
 
@@ -72,9 +72,9 @@ export default function AddCampaign() {
       const daily = parseInt(form.dailyBudget.replace(/,/g, ""));
       const monthly = parseInt(form.monthlyBudget.replace(/,/g, ""));
       if (daily >= monthly) {
-        setErrors((e: any) => ({ ...e, dailyBudget: "Daily budget must be less than monthly budget." }));
+        setErrors((e) => ({ ...e, dailyBudget: "Daily budget must be less than monthly budget." }));
       } else {
-        setErrors((e: any) => ({ ...e, dailyBudget: undefined }));
+        setErrors((e) => ({ ...e, dailyBudget: undefined }));
       }
     }
   }, [form.dailyBudget, form.monthlyBudget]);
@@ -115,7 +115,7 @@ export default function AddCampaign() {
               required
               value={form.flourishClientName}
               onChange={e => setField("flourishClientName", e.target.value)}
-              onBlur={e => setErrors((err: any) => ({ ...err, flourishClientName: validateFlourish(e.target.value) }))}
+              onBlur={e => setErrors((err) => ({ ...err, flourishClientName: validateFlourish(e.target.value) }))}
               placeholder=" "
             />
             <label className={styles.floatingLabel}>Flourish Client Name</label>

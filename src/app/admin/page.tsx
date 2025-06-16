@@ -20,11 +20,6 @@ import Link from "next/link";
 const ADMIN_PASSWORD = "admin123";
 
 // Simulated API data for now
-const initialData = {
-  accountManagers: ["Manager 1", "Manager 2"],
-  geo: ["USA", "Canada"],
-  os: ["iOS", "Android"]
-};
 
 type CrudManagerProps = {
   label: string;

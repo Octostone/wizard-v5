@@ -126,8 +126,6 @@ export default function AddOffers() {
   const cpiOverrideWidth = "90px";
   const dailyBudgetWidth = "90px";
   const dailyCapWidth = "90px";
-  // Client Offer Name gets all remaining space
-  const nameWidth = "auto";
 
   return (
     <div className={styles.page}>
