@@ -15,6 +15,13 @@ const TEMPLATE_SHEET_ID = process.env.TEMPLATE_SHEET_ID;
 
 export async function POST(request: Request) {
   try {
+    // Debug: Log environment variables (remove in production)
+    console.log('Environment variables check:');
+    console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_REFRESH_TOKEN:', process.env.GOOGLE_REFRESH_TOKEN ? 'SET' : 'NOT SET');
+    
     const body = await request.json();
     const { 
       outputFileName, 
