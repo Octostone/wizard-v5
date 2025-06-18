@@ -57,15 +57,36 @@ export async function POST(request: Request) {
     }
 
     // 2. Update the sheet with form data
-    // This is a simplified example - you'll need to map your form data to the correct cells
-    const updateResponse = await sheets.spreadsheets.values.update({
+    // Write Client Basics
+    await sheets.spreadsheets.values.update({
       spreadsheetId: newFileId,
-      range: 'Sheet1!A1', // Adjust range as needed
+      range: 'Client Basics!A2:C2',
       valueInputOption: 'RAW',
       requestBody: {
         values: [
-          // Map your form data here
-          // Example: [formData.accountManager, formData.clientName, ...]
+          [
+            formData.accountManager || '',
+            formData.clientDBAName || '',
+            formData.billingName || ''
+          ]
+        ]
+      }
+    });
+
+    // Write Client Details
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newFileId,
+      range: 'Client Details!A2:E2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.flourishClientName || '',
+            formData.mmp || '',
+            formData.netGross || '',
+            formData.grossDeduction || '',
+            formData.baseCM || ''
+          ]
         ]
       }
     });

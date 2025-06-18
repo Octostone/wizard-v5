@@ -82,6 +82,19 @@ export default function AddAnApp() {
           </div>
 
           <div className={styles.formGroup}>
+            <input
+              className={styles.floatingInput}
+              type="text"
+              required
+              value={form.appName}
+              onChange={e => setField("appName", e.target.value)}
+              onKeyDown={preventLineBreaks}
+              placeholder="This will be the common name used in Flourish"
+            />
+            <label className={styles.floatingLabel}>App Name*</label>
+          </div>
+
+          <div className={styles.formGroup}>
             <select
               className={styles.floatingInput}
               required
