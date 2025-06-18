@@ -91,6 +91,28 @@ export async function POST(request: Request) {
       }
     });
 
+    // Write App Info
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newFileId,
+      range: 'App Info!A2:I2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.accountManager || '',
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.os || '',
+            formData.storeUrl || '',
+            formData.retributionDays || '',
+            formData.category1 || '',
+            formData.category2 || '',
+            formData.category3 || ''
+          ]
+        ]
+      }
+    });
+
     return NextResponse.json({ 
       success: true, 
       fileId: newFileId,
