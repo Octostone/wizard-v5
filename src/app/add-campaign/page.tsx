@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import styles from "../page.module.css";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useFormContext } from "../../context/FormContext";
 import ClearButton from "../../components/ClearButton";
 
@@ -13,6 +13,7 @@ export default function AddCampaign() {
   const [pricingModels, setPricingModels] = useState<string[]>(["CPI", "Hybrid", "CPA"]);
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
   const router = useRouter();
+  const pathname = usePathname();
   const [errors, setErrors] = useState<Record<string, any>>({});
   const [clickUrl, setClickUrl] = useState(form.clickUrl || "");
   const clickUrlRef = useRef<HTMLTextAreaElement>(null);
@@ -91,6 +92,36 @@ export default function AddCampaign() {
     <div className={styles.page}>
       <div className={styles.centeredCard}>
         <h1 className={styles.title}>Add Campaign</h1>
+        {/* Progress Bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 40, gap: 8 }}>
+          {[
+            { name: 'Home', path: '/' },
+            { name: 'Client Basics', path: '/client-basics' },
+            { name: 'Client Details', path: '/client-details' },
+            { name: 'Add an App', path: '/add-an-app' },
+            { name: 'Add Events', path: '/add-events' },
+            { name: 'Add Campaign', path: '/add-campaign' },
+            { name: 'Add Offers', path: '/add-offers' },
+            { name: 'Add Images', path: '/add-images' },
+            { name: 'Finish', path: '/finish' },
+          ].map((step, idx, arr) => (
+            <React.Fragment key={step.path}>
+              <Link href={step.path} style={{
+                padding: '6px 14px',
+                borderRadius: 16,
+                background: pathname === step.path ? '#1976d2' : '#e3eafc',
+                color: pathname === step.path ? '#fff' : '#1976d2',
+                fontWeight: pathname === step.path ? 600 : 400,
+                textDecoration: 'none',
+                fontSize: 15,
+                border: pathname === step.path ? '2px solid #1976d2' : '2px solid #e3eafc',
+                transition: 'background 0.2s, color 0.2s, border 0.2s',
+                cursor: 'pointer',
+              }}>{step.name}</Link>
+              {idx < arr.length - 1 && <span style={{ color: '#888', margin: '0 4px', display: 'flex', alignItems: 'center' }}>→</span>}
+            </React.Fragment>
+          ))}
+        </div>
         <form className={styles.form} autoComplete="off">
           {/* Account Manager */}
           <div className={styles.formGroup}>
@@ -198,7 +229,7 @@ export default function AddCampaign() {
               onChange={e => setField("pricingModel", e.target.value)}
               required
             >
-              <option value="" disabled>Pricing Model*</option>
+              <option value="" disabled>Pricing Model</option>
               {pricingModels.map((model) => (
                 <option key={model} value={model}>{model}</option>
               ))}
@@ -214,7 +245,7 @@ export default function AddCampaign() {
               onChange={e => setField("carouselSpotlight", e.target.value)}
               required
             >
-              <option value="" disabled>Carousel/Spotlight*</option>
+              <option value="" disabled>Carousel/Spotlight</option>
               {carouselSpotlightOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
@@ -239,19 +270,14 @@ export default function AddCampaign() {
           </div>
 
           {/* Enable Spiral Checkbox */}
-          <div className={styles.formGroup}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 0' }}>
-              <input
-                type="checkbox"
-                id="enableSpiral"
-                checked={!!form.enableSpiral}
-                onChange={e => setField("enableSpiral", e.target.checked)}
-                style={{ width: '18px', height: '18px' }}
-              />
-              <label htmlFor="enableSpiral" style={{ fontSize: '16px', fontWeight: '500' }}>
-                Enable Spiral
-              </label>
-            </div>
+          <div className={styles.roasSpiralCheckbox} style={{ justifyContent: 'center', color: '#111', fontWeight: 500, fontSize: '1rem' }}>
+            <input
+              type="checkbox"
+              checked={form.enableSpiral || false}
+              onChange={e => setField("enableSpiral", e.target.checked)}
+              style={{ marginRight: 8 }}
+            />
+            Enable Spiral
           </div>
         </form>
 

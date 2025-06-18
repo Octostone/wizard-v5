@@ -3,7 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import styles from "../page.module.css";
 import { useFormContext } from "../../context/FormContext";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import ClearButton from "../../components/ClearButton";
 
 const MAX_FILE_SIZE = 100 * 1024; // 100 kB
@@ -22,6 +22,7 @@ export default function AddImages() {
   const [iconError, setIconError] = useState<string>("");
   const [fillError, setFillError] = useState<string>("");
   const router = useRouter();
+  const pathname = usePathname();
   const iconInputRef = useRef<HTMLInputElement>(null);
   const fillInputRef = useRef<HTMLInputElement>(null);
 
@@ -93,6 +94,36 @@ export default function AddImages() {
     <div className={styles.page}>
       <div className={styles.centeredCard}>
         <h1 className={styles.title}>Add Images</h1>
+        {/* Progress Bar */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 40, gap: 8 }}>
+          {[
+            { name: 'Home', path: '/' },
+            { name: 'Client Basics', path: '/client-basics' },
+            { name: 'Client Details', path: '/client-details' },
+            { name: 'Add an App', path: '/add-an-app' },
+            { name: 'Add Events', path: '/add-events' },
+            { name: 'Add Campaign', path: '/add-campaign' },
+            { name: 'Add Offers', path: '/add-offers' },
+            { name: 'Add Images', path: '/add-images' },
+            { name: 'Finish', path: '/finish' },
+          ].map((step, idx, arr) => (
+            <React.Fragment key={step.path}>
+              <Link href={step.path} style={{
+                padding: '6px 14px',
+                borderRadius: 16,
+                background: pathname === step.path ? '#1976d2' : '#e3eafc',
+                color: pathname === step.path ? '#fff' : '#1976d2',
+                fontWeight: pathname === step.path ? 600 : 400,
+                textDecoration: 'none',
+                fontSize: 15,
+                border: pathname === step.path ? '2px solid #1976d2' : '2px solid #e3eafc',
+                transition: 'background 0.2s, color 0.2s, border 0.2s',
+                cursor: 'pointer',
+              }}>{step.name}</Link>
+              {idx < arr.length - 1 && <span style={{ color: '#888', margin: '0 4px', display: 'flex', alignItems: 'center' }}>→</span>}
+            </React.Fragment>
+          ))}
+        </div>
         <form className={styles.form} autoComplete="off">
           {/* Flourish Client Name */}
           <div className={styles.formGroup}>
@@ -136,35 +167,29 @@ export default function AddImages() {
           <div className={styles.formGroup}>
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Icon (Square)</label>
             <input
-              type="file"
-              accept="image/jpeg,image/png"
               ref={iconInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
               onChange={handleIconUpload}
-              style={{ border: iconError ? '2px solid #b71c1c' : undefined, padding: 8, borderRadius: 4 }}
             />
-            {iconError && <div className={styles.errorText}>{iconError}</div>}
-            {form.iconImageName && (
-              <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
-                File: {form.iconImageName}
-              </div>
-            )}
+            <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
+              {form.iconImageName || 'No file chosen'}
+            </span>
           </div>
           {/* Upload Fill Image (Rectangle) */}
           <div className={styles.formGroup}>
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Fill Image (Rectangle)</label>
             <input
-              type="file"
-              accept="image/jpeg,image/png"
               ref={fillInputRef}
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
               onChange={handleFillUpload}
-              style={{ border: fillError ? '2px solid #b71c1c' : undefined, padding: 8, borderRadius: 4 }}
             />
-            {fillError && <div className={styles.errorText}>{fillError}</div>}
-            {form.fillImageName && (
-              <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
-                File: {form.fillImageName}
-              </div>
-            )}
+            <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
+              {form.fillImageName || 'No file chosen'}
+            </span>
           </div>
         </form>
         <div className={styles.navButtonGroup}>
