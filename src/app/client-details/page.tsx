@@ -169,20 +169,6 @@ export default function ClientDetails() {
             </select>
             <label className={styles.floatingLabel}>Base/CM</label>
           </div>
-          <input
-            className={styles.floatingInput}
-            type="text"
-            value={form.baseCM || ""}
-            onChange={e => setField("baseCM", e.target.value)}
-            placeholder="Client Base/CM Page"
-          />
-          <input
-            className={styles.floatingInput}
-            type="text"
-            value={form.netGross || ""}
-            onChange={e => setField("netGross", e.target.value)}
-            placeholder="Client Net/Gross"
-          />
         </form>
         <div className={styles.navButtonGroup}>
           <button type="button" className={`${styles.navButton} ${styles.navButtonBack}`} onClick={() => router.back()}>Back</button>
