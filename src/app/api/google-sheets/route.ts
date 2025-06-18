@@ -44,6 +44,15 @@ export async function POST(request: Request) {
       refresh_token: process.env.GOOGLE_REFRESH_TOKEN
     });
 
+    // Debug: Get the authenticated user info
+    try {
+      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+      const userInfo = await oauth2.userinfo.get();
+      console.log('Authenticated as:', userInfo.data.email);
+    } catch (error) {
+      console.log('Could not get user info, using service account or other auth method');
+    }
+
     // Initialize Google Drive and Sheets APIs
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
