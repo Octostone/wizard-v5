@@ -66,6 +66,9 @@ export type FormState = {
   iconImageLink?: string;
   fillImageName?: string;
   fillImageLink?: string;
+  // Submission fields
+  outputFileName?: string;
+  targetFolderId?: string;
 };
 
 const defaultState: FormState = {
@@ -116,7 +119,10 @@ const defaultState: FormState = {
   iconImageName: "",
   iconImageLink: "",
   fillImageName: "",
-  fillImageLink: ""
+  fillImageLink: "",
+  // Submission fields
+  outputFileName: "",
+  targetFolderId: ""
 };
 
 type FormContextType = {

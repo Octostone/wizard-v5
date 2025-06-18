@@ -35,6 +35,12 @@ export default function Home() {
     fetchAccountManagers();
   }, []);
 
+  // Helper function to extract folder ID from Google Drive URL
+  const extractFolderId = (url: string): string => {
+    const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : url;
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.centeredCard}>
@@ -58,18 +64,28 @@ export default function Home() {
             <label className={styles.floatingLabel}>Account Manager</label>
             {error && <div className={styles.error}>{error}</div>}
           </div>
-          <input
-            className={styles.input}
-            type="text"
-            placeholder="Name your output Excel file (this will become the Google Sheet name)*"
-            required
-          />
-          <input
-            className={styles.input}
-            type="text"
-            placeholder="Paste Google Drive folder URL to save the file*"
-            required
-          />
+          <div className={styles.formGroup}>
+            <input
+              className={styles.floatingInput}
+              type="text"
+              placeholder=" "
+              value={form.outputFileName || ""}
+              onChange={e => setField("outputFileName", e.target.value)}
+              required
+            />
+            <label className={styles.floatingLabel}>Name your output Excel file (this will become the Google Sheet name)*</label>
+          </div>
+          <div className={styles.formGroup}>
+            <input
+              className={styles.floatingInput}
+              type="text"
+              placeholder=" "
+              value={form.targetFolderId || ""}
+              onChange={e => setField("targetFolderId", extractFolderId(e.target.value))}
+              required
+            />
+            <label className={styles.floatingLabel}>Paste Google Drive folder URL to save the file*</label>
+          </div>
         </form>
         <div className={styles.buttonGroup}>
           <button type="button" className={styles.actionButton} style={{ background: '#0d47a1' }} onClick={() => router.push('/client-basics')}>
