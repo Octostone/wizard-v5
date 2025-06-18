@@ -21,8 +21,6 @@ export default function AddImages() {
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [iconError, setIconError] = useState<string>("");
   const [fillError, setFillError] = useState<string>("");
-  const [iconFile, setIconFile] = useState<File | null>(null);
-  const [fillFile, setFillFile] = useState<File | null>(null);
   const router = useRouter();
   const iconInputRef = useRef<HTMLInputElement>(null);
   const fillInputRef = useRef<HTMLInputElement>(null);
@@ -62,9 +60,13 @@ export default function AddImages() {
     const errors = validateFile(file);
     if (errors.length > 0) {
       setIconError(errors.join(". "));
-      setIconFile(null);
+      setField("iconImageName", "");
+      setField("iconImageLink", "");
     } else {
-      setIconFile(file);
+      // Store the file name in form context
+      setField("iconImageName", file.name);
+      // Generate a placeholder link for Google Drive folder
+      setField("iconImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
       setIconError("");
     }
   };
@@ -76,9 +78,13 @@ export default function AddImages() {
     const errors = validateFile(file);
     if (errors.length > 0) {
       setFillError(errors.join(". "));
-      setFillFile(null);
+      setField("fillImageName", "");
+      setField("fillImageLink", "");
     } else {
-      setFillFile(file);
+      // Store the file name in form context
+      setField("fillImageName", file.name);
+      // Generate a placeholder link for Google Drive folder
+      setField("fillImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
       setFillError("");
     }
   };
@@ -137,6 +143,11 @@ export default function AddImages() {
               style={{ border: iconError ? '2px solid #b71c1c' : undefined, padding: 8, borderRadius: 4 }}
             />
             {iconError && <div className={styles.errorText}>{iconError}</div>}
+            {form.iconImageName && (
+              <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
+                File: {form.iconImageName}
+              </div>
+            )}
           </div>
           {/* Upload Fill Image (Rectangle) */}
           <div className={styles.formGroup}>
@@ -149,6 +160,11 @@ export default function AddImages() {
               style={{ border: fillError ? '2px solid #b71c1c' : undefined, padding: 8, borderRadius: 4 }}
             />
             {fillError && <div className={styles.errorText}>{fillError}</div>}
+            {form.fillImageName && (
+              <div style={{ fontSize: '14px', color: '#666', marginTop: '4px' }}>
+                File: {form.fillImageName}
+              </div>
+            )}
           </div>
         </form>
         <div className={styles.navButtonGroup}>

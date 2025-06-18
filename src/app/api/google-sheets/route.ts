@@ -193,6 +193,26 @@ export async function POST(request: Request) {
       });
     }
 
+    // Write Images tab
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newFileId,
+      range: 'Images!A2:G2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            formData.iconImageName || '',
+            formData.iconImageLink || '',
+            formData.fillImageName || '',
+            formData.fillImageLink || ''
+          ]
+        ]
+      }
+    });
+
     return NextResponse.json({ 
       success: true, 
       fileId: newFileId,

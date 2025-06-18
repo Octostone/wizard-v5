@@ -61,6 +61,11 @@ export type FormState = {
   D60?: string;
   D90?: string;
   D180?: string;
+  // Image fields
+  iconImageName?: string;
+  iconImageLink?: string;
+  fillImageName?: string;
+  fillImageLink?: string;
 };
 
 const defaultState: FormState = {
@@ -106,7 +111,12 @@ const defaultState: FormState = {
   D30: "",
   D60: "",
   D90: "",
-  D180: ""
+  D180: "",
+  // Image fields
+  iconImageName: "",
+  iconImageLink: "",
+  fillImageName: "",
+  fillImageLink: ""
 };
 
 type FormContextType = {
