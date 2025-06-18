@@ -166,6 +166,13 @@ export default function AddImages() {
           {/* Upload Icon (Square) */}
           <div className={styles.formGroup}>
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Icon (Square)</label>
+            <button
+              type="button"
+              style={{ padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 500 }}
+              onClick={() => iconInputRef.current?.click()}
+            >
+              Choose File
+            </button>
             <input
               ref={iconInputRef}
               type="file"
@@ -180,6 +187,13 @@ export default function AddImages() {
           {/* Upload Fill Image (Rectangle) */}
           <div className={styles.formGroup}>
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Fill Image (Rectangle)</label>
+            <button
+              type="button"
+              style={{ padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 500 }}
+              onClick={() => fillInputRef.current?.click()}
+            >
+              Choose File
+            </button>
             <input
               ref={fillInputRef}
               type="file"
