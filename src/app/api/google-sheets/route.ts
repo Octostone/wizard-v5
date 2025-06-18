@@ -113,6 +113,59 @@ export async function POST(request: Request) {
       }
     });
 
+    // Write Events tab (multiple rows)
+    if (Array.isArray(formData.events) && formData.events.length > 0) {
+      // Map each event to the correct order of columns
+      const eventRows = formData.events.map((event: any) => [
+        event.position || '',
+        event.name || '',
+        event.postbackEventName || '',
+        event.estCRPercent || '',
+        event.estTTCMins || '',
+        event.eventType || '',
+        event.pubReveSource || ''
+      ]);
+      // Write all event rows starting at A2
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newFileId,
+        range: `Events!A2:G${formData.events.length + 1}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: eventRows
+        }
+      });
+    }
+
+    // Write Campaign tab
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newFileId,
+      range: 'Campaign!A2:Q2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.accountManager || '',
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            formData.clientCampaignName || '',
+            formData.monthlyBudget || '',
+            formData.dailyBudget || '',
+            formData.pricingModel || '',
+            formData.carouselSpotlight || '',
+            formData.clickUrl || '',
+            formData.enableSpiral ? 'TRUE' : 'FALSE',
+            formData.D7 || '',
+            formData.D14 || '',
+            formData.D30 || '',
+            formData.D60 || '',
+            formData.D90 || '',
+            formData.D180 || ''
+          ]
+        ]
+      }
+    });
+
     return NextResponse.json({ 
       success: true, 
       fileId: newFileId,

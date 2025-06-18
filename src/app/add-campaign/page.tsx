@@ -107,6 +107,7 @@ export default function AddCampaign() {
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>
           </div>
+
           {/* Flourish Client Name */}
           <div className={styles.formGroup}>
             <input
@@ -121,7 +122,8 @@ export default function AddCampaign() {
             <label className={styles.floatingLabel}>Flourish Client Name</label>
             {errors.flourishClientName && <div style={{ color: 'red', fontSize: 13 }}>{errors.flourishClientName}</div>}
           </div>
-          {/* App Name */}
+
+          {/* App Name - inherits from previous page */}
           <div className={styles.formGroup}>
             <input
               className={styles.floatingInput}
@@ -132,6 +134,7 @@ export default function AddCampaign() {
             />
             <label className={styles.floatingLabel}>App Name</label>
           </div>
+
           {/* Geo for Campaign */}
           <div className={styles.formGroup}>
             <select
@@ -147,7 +150,8 @@ export default function AddCampaign() {
             </select>
             <label className={styles.floatingLabel}>Geo for Campaign</label>
           </div>
-          {/* Client Supplied Campaign Name */}
+
+          {/* Client Campaign Name */}
           <div className={styles.formGroup}>
             <input
               className={styles.floatingInput}
@@ -156,8 +160,9 @@ export default function AddCampaign() {
               onChange={e => handleClientCampaignName(e.target.value)}
               placeholder=" "
             />
-            <label className={styles.floatingLabel}>Client Supplied Campaign Name</label>
+            <label className={styles.floatingLabel}>Client Campaign Name</label>
           </div>
+
           {/* Monthly Budget */}
           <div className={styles.formGroup}>
             <input
@@ -170,6 +175,7 @@ export default function AddCampaign() {
             />
             <label className={styles.floatingLabel}>Monthly Budget</label>
           </div>
+
           {/* Daily Budget */}
           <div className={styles.formGroup}>
             <input
@@ -183,7 +189,8 @@ export default function AddCampaign() {
             <label className={styles.floatingLabel}>Daily Budget</label>
             {errors.dailyBudget && <div style={{ color: 'red', fontSize: 13 }}>{errors.dailyBudget}</div>}
           </div>
-          {/* CPI, Hybrid, or CPA */}
+
+          {/* Pricing Model */}
           <div className={styles.formGroup}>
             <select
               className={styles.floatingInput}
@@ -191,14 +198,15 @@ export default function AddCampaign() {
               onChange={e => setField("pricingModel", e.target.value)}
               required
             >
-              <option value="" disabled>CPI, Hybrid, or CPA*</option>
+              <option value="" disabled>Pricing Model*</option>
               {pricingModels.map((model) => (
                 <option key={model} value={model}>{model}</option>
               ))}
             </select>
-            <label className={styles.floatingLabel}>CPI, Hybrid, or CPA</label>
+            <label className={styles.floatingLabel}>Pricing Model</label>
           </div>
-          {/* Carousel or Spotlight */}
+
+          {/* Carousel/Spotlight */}
           <div className={styles.formGroup}>
             <select
               className={styles.floatingInput}
@@ -206,13 +214,14 @@ export default function AddCampaign() {
               onChange={e => setField("carouselSpotlight", e.target.value)}
               required
             >
-              <option value="" disabled>Carousel or Spotlight*</option>
+              <option value="" disabled>Carousel/Spotlight*</option>
               {carouselSpotlightOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </select>
-            <label className={styles.floatingLabel}>Carousel or Spotlight</label>
+            <label className={styles.floatingLabel}>Carousel/Spotlight</label>
           </div>
+
           {/* Click URL */}
           <div className={styles.formGroup}>
             <textarea
@@ -228,19 +237,27 @@ export default function AddCampaign() {
               If non-standard click URLs with hardcoded elements are required, please submit separately with specific matching to the appropriate offers.
             </div>
           </div>
+
+          {/* Enable Spiral Checkbox */}
+          <div className={styles.formGroup}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 0' }}>
+              <input
+                type="checkbox"
+                id="enableSpiral"
+                checked={!!form.enableSpiral}
+                onChange={e => setField("enableSpiral", e.target.checked)}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <label htmlFor="enableSpiral" style={{ fontSize: '16px', fontWeight: '500' }}>
+                Enable Spiral
+              </label>
+            </div>
+          </div>
         </form>
+
         {/* ROAS Container */}
         <div className={styles.roasContainer}>
           <h2 className={styles.title} style={{ fontSize: 22, marginBottom: 12 }}>ROAS Targets</h2>
-          <div className={styles.roasSpiralCheckbox}>
-            <input
-              type="checkbox"
-              checked={!!form.enableSpiral}
-              onChange={e => setField("enableSpiral", e.target.checked)}
-              style={{ marginRight: 8 }}
-            />
-            Do we enable spiral?
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
             {(['D7', 'D14', 'D30', 'D60', 'D90', 'D180'] as (keyof typeof form)[]).map((field) => (
               <div className={styles.formGroup} key={field}>
@@ -257,6 +274,7 @@ export default function AddCampaign() {
             ))}
           </div>
         </div>
+
         <div className={styles.navButtonGroup}>
           <button type="button" className={`${styles.navButton} ${styles.navButtonBack}`} onClick={() => router.back()}>Back</button>
           <Link href="/add-offers" className={`${styles.navButton} ${styles.navButtonNext}`}>Next</Link>
