@@ -125,7 +125,7 @@ export default function ClientDetails() {
               value={form.netGross}
               onChange={e => setField("netGross", e.target.value)}
             >
-              <option value="" disabled>Is client passing us net or gross values on IAP's?</option>
+              <option value="" disabled>Is client passing us net or gross values on IAP&apos;s?</option>
               <option value="net">net</option>
               <option value="gross">gross</option>
             </select>

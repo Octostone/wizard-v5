@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import styles from '../app/page.module.css';
 import { EventItem } from '../context/FormContext';
 import { useSortable } from '@dnd-kit/sortable';

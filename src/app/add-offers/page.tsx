@@ -8,7 +8,32 @@ import ClearButton from "../../components/ClearButton";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
-const initialOffer = (geo: string) => ({
+interface Offer {
+  id: string;
+  geo: string;
+  gender: string;
+  minAge: string;
+  maxAge: string;
+  minOS: string;
+  maxOS: string;
+  cpi: string;
+  cpiOverride: string;
+  dailyBudget: string;
+  dailyCap: string;
+  clientOfferName: string;
+}
+
+interface OfferErrors {
+  minAge?: string;
+  maxAge?: string;
+  minOS?: string;
+  maxOS?: string;
+  cpi?: string;
+  cpiOverride?: string;
+  clientOfferName?: string;
+}
+
+const initialOffer = (geo: string): Offer => ({
   id: `offer-${Date.now()}-${Math.random()}`,
   geo: geo || "",
   gender: "",
@@ -29,8 +54,8 @@ export default function AddOffers() {
   const pathname = usePathname();
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [genderOptions, setGenderOptions] = useState<string[]>(["Male", "Female", "Any"]);
-  const [offers, setOffers] = useState<any[]>([initialOffer(form.geo)]);
-  const [errors, setErrors] = useState<any[]>([{}]);
+  const [offers, setOffers] = useState<Offer[]>([initialOffer(form.geo)]);
+  const [errors, setErrors] = useState<OfferErrors[]>([{}]);
 
   // Fetch admin dropdowns
   useEffect(() => {
@@ -51,11 +76,11 @@ export default function AddOffers() {
     if (offers.length === 1 && !offers[0].geo && form.geo) {
       setOffers([{ ...offers[0], geo: form.geo }]);
     }
-  }, [form.geo]);
+  }, [form.geo, offers]);
 
   // Validation
-  const validateRow = (row: any) => {
-    const rowErrors: any = {};
+  const validateRow = (row: Offer): OfferErrors => {
+    const rowErrors: OfferErrors = {};
     // Min/Max Age
     if (row.minAge && row.maxAge && parseInt(row.minAge) >= parseInt(row.maxAge)) {
       rowErrors.minAge = "Check age";
@@ -81,7 +106,7 @@ export default function AddOffers() {
   };
 
   // Handle field change
-  const handleChange = (idx: number, field: string, value: string) => {
+  const handleChange = (idx: number, field: keyof Offer, value: string) => {
     const updated = offers.map((row, i) =>
       i === idx ? { ...row, [field]: value } : row
     );

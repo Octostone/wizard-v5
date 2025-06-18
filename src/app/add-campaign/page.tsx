@@ -14,7 +14,7 @@ export default function AddCampaign() {
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
   const router = useRouter();
   const pathname = usePathname();
-  const [errors, setErrors] = useState<Record<string, any>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [clickUrl, setClickUrl] = useState(form.clickUrl || "");
   const clickUrlRef = useRef<HTMLTextAreaElement>(null);
 

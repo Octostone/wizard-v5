@@ -7,6 +7,7 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -27,13 +28,26 @@ type CrudManagerProps = {
   setItems: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
+interface SortableItemProps {
+  id: string;
+  index: number;
+  item: string;
+  onEdit: (index: number) => void;
+  onDelete: (index: number) => void;
+  onEditSave: (index: number) => void;
+  onEditCancel: () => void;
+  isEditing: boolean;
+  editValue: string;
+  setEditValue: (value: string) => void;
+}
+
 function DragHandle() {
   return (
     <span className={styles.dragHandle} title="Drag to reorder">≡</span>
   );
 }
 
-function SortableItem({ id, index, item, onEdit, onDelete, onEditSave, onEditCancel, isEditing, editValue, setEditValue }: any) {
+function SortableItem({ id, index, item, onEdit, onDelete, onEditSave, onEditCancel, isEditing, editValue, setEditValue }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -99,9 +113,9 @@ function CrudManager({ label, items, setItems }: CrudManagerProps) {
   // dnd-kit setup
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    if (active.id !== over?.id) {
+    if (active.id !== over?.id && over) {
       const oldIndex = items.findIndex((item) => item === active.id);
       const newIndex = items.findIndex((item) => item === over.id);
       setItems(arrayMove(items, oldIndex, newIndex));
