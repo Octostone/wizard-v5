@@ -166,6 +166,33 @@ export async function POST(request: Request) {
       }
     });
 
+    // Write Offers tab (multiple rows)
+    if (Array.isArray(formData.offers) && formData.offers.length > 0) {
+      // Map each offer to the correct order of columns
+      const offerRows = formData.offers.map((offer: any) => [
+        offer.geo || '',
+        offer.gender || '',
+        offer.minAge || '',
+        offer.maxAge || '',
+        offer.minOS || '',
+        offer.maxOS || '',
+        offer.cpi || '',
+        offer.cpiOverride || '',
+        offer.dailyBudget || '',
+        offer.dailyCap || '',
+        offer.clientOfferName || ''
+      ]);
+      // Write all offer rows starting at A2
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newFileId,
+        range: `Offers!A2:K${formData.offers.length + 1}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: offerRows
+        }
+      });
+    }
+
     return NextResponse.json({ 
       success: true, 
       fileId: newFileId,
