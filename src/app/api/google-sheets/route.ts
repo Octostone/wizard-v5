@@ -48,14 +48,29 @@ export async function POST(request: Request) {
     try {
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
       const userInfo = await oauth2.userinfo.get();
-      console.log('Authenticated as:', userInfo.data.email);
-    } catch (error) {
-      console.log('Could not get user info, using service account or other auth method');
+      console.log('✅ Authenticated as:', userInfo.data.email);
+    } catch (error: any) {
+      console.log('⚠️ Could not get user info, using service account or other auth method');
+      console.log('Error details:', error.message);
     }
 
     // Initialize Google Drive and Sheets APIs
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+
+    // Debug: Test if we can access the template file
+    try {
+      console.log('🔍 Testing access to template file:', TEMPLATE_SHEET_ID);
+      const fileInfo = await drive.files.get({
+        fileId: TEMPLATE_SHEET_ID,
+        fields: 'id,name,permissions'
+      });
+      console.log('✅ Template file accessible:', fileInfo.data.name);
+      console.log('📋 File permissions:', fileInfo.data.permissions?.map(p => p.emailAddress).join(', '));
+    } catch (error: any) {
+      console.log('❌ Cannot access template file:', error.message);
+      console.log('This means the authenticated user does not have access to this file');
+    }
 
     // 1. Copy the template file
     const copyResponse = await drive.files.copy({
