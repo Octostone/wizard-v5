@@ -71,27 +71,159 @@ export async function POST(request: Request) {
     }
 
     // --- Step 3: Write Form Data to the New Sheet ---
-    // (The rest of the logic remains the same)
-    const clientData = [
-      formData.clientName || '',
-      formData.clientEmail || '',
-      formData.clientPhone || '',
-      formData.clientWebsite || '',
-      formData.businessName || '',
-      formData.businessAddress || '',
-      formData.industry || ''
-    ];
-
+    // This logic is restored from the original version to match the template's structure.
+    
+    // Write Client Basics
     await sheets.spreadsheets.values.update({
       spreadsheetId: newSheetId,
-      range: 'Client & Business!B3:B9',
-      valueInputOption: 'USER_ENTERED',
+      range: 'Client Basics!A2:C2',
+      valueInputOption: 'RAW',
       requestBody: {
-        values: clientData.map(value => [value])
-      },
+        values: [
+          [
+            formData.accountManager || '',
+            formData.clientDBAName || '',
+            formData.billingName || ''
+          ]
+        ]
+      }
     });
 
-    // ... (Add other data writes here, e.g., App, Events, Campaigns)
+    // Write Client Details
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newSheetId,
+      range: 'Client Details!A2:E2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.flourishClientName || '',
+            formData.mmp || '',
+            formData.netGross || '',
+            formData.grossDeduction || '',
+            formData.baseCM || ''
+          ]
+        ]
+      }
+    });
+
+    // Write App Info
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newSheetId,
+      range: 'App Info!A2:I2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.accountManager || '',
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.os || '',
+            formData.storeUrl || '',
+            formData.retributionDays || '',
+            formData.category1 || '',
+            formData.category2 || '',
+            formData.category3 || ''
+          ]
+        ]
+      }
+    });
+
+    // Write Events tab (multiple rows)
+    if (Array.isArray(formData.events) && formData.events.length > 0) {
+      const eventRows = formData.events.map((event: any) => [
+        event.position || '',
+        event.name || '',
+        event.postbackEventName || '',
+        event.estCRPercent || '',
+        event.estTTCMins || '',
+        event.eventType || '',
+        event.pubReveSource || ''
+      ]);
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newSheetId,
+        range: `Events!A2:G${formData.events.length + 1}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: eventRows
+        }
+      });
+    }
+
+    // Write Campaign tab
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newSheetId,
+      range: 'Campaign!A2:Q2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.accountManager || '',
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            formData.clientCampaignName || '',
+            formData.monthlyBudget || '',
+            formData.dailyBudget || '',
+            formData.pricingModel || '',
+            formData.carouselSpotlight || '',
+            formData.clickUrl || '',
+            formData.enableSpiral ? 'TRUE' : 'FALSE',
+            formData.D7 || '',
+            formData.D14 || '',
+            formData.D30 || '',
+            formData.D60 || '',
+            formData.D90 || '',
+            formData.D180 || ''
+          ]
+        ]
+      }
+    });
+
+    // Write Offers tab (multiple rows)
+    if (Array.isArray(formData.offers) && formData.offers.length > 0) {
+      const offerRows = formData.offers.map((offer: any) => [
+        offer.geo || '',
+        offer.gender || '',
+        offer.minAge || '',
+        offer.maxAge || '',
+        offer.minOS || '',
+        offer.maxOS || '',
+        offer.cpi || '',
+        offer.cpiOverride || '',
+        offer.dailyBudget || '',
+        offer.dailyCap || '',
+        offer.clientOfferName || ''
+      ]);
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: newSheetId,
+        range: `Offers!A2:K${formData.offers.length + 1}`,
+        valueInputOption: 'RAW',
+        requestBody: {
+          values: offerRows
+        }
+      });
+    }
+
+    // Write Images tab
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newSheetId,
+      range: 'Images!A2:G2',
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: [
+          [
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            formData.iconImageName || '',
+            formData.iconImageLink || '',
+            formData.fillImageName || '',
+            formData.fillImageLink || ''
+          ]
+        ]
+      }
+    });
 
     // --- Success Response ---
     return NextResponse.json({
