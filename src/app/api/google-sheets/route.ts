@@ -1,14 +1,15 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// Use google.auth.OAuth2 for compatibility with googleapis
-
-// Initialize OAuth2 client
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
+// Initialize service account authentication using JWT
+const serviceAccountAuth = new google.auth.JWT({
+  email: process.env.GOOGLE_CLIENT_EMAIL,
+  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  scopes: [
+    'https://www.googleapis.com/auth/drive.file',
+    'https://www.googleapis.com/auth/spreadsheets'
+  ]
+});
 
 // Template sheet ID - this should be stored in environment variables
 const TEMPLATE_SHEET_ID = process.env.TEMPLATE_SHEET_ID;
@@ -18,9 +19,8 @@ export async function POST(request: Request) {
     // Debug: Log environment variables (remove in production)
     console.log('Environment variables check:');
     console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_REFRESH_TOKEN:', process.env.GOOGLE_REFRESH_TOKEN ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_CLIENT_EMAIL:', process.env.GOOGLE_CLIENT_EMAIL ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_PRIVATE_KEY:', process.env.GOOGLE_PRIVATE_KEY ? 'SET' : 'NOT SET');
     
     const body = await request.json();
     const { 
@@ -39,28 +39,13 @@ export async function POST(request: Request) {
       throw new Error('targetFolderId is required');
     }
 
-    // Set credentials
-    oauth2Client.setCredentials({
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN
-    });
-
-    // Debug: Get the authenticated user info
-    try {
-      const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-      const userInfo = await oauth2.userinfo.get();
-      console.log('✅ Authenticated as:', userInfo.data.email);
-    } catch (error: any) {
-      console.log('⚠️ Could not get user info, using service account or other auth method');
-      console.log('Error details:', error.message);
-    }
-
-    // Initialize Google Drive and Sheets APIs
-    const drive = google.drive({ version: 'v3', auth: oauth2Client });
-    const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
+    // Authorize the service account
+    await serviceAccountAuth.authorize();
 
     // Debug: Test if we can access the template file
     try {
       console.log('🔍 Testing access to template file:', TEMPLATE_SHEET_ID);
+      const drive = google.drive({ version: 'v3', auth: serviceAccountAuth });
       const fileInfo = await drive.files.get({
         fileId: TEMPLATE_SHEET_ID,
         fields: 'id,name,permissions'
@@ -69,8 +54,13 @@ export async function POST(request: Request) {
       console.log('📋 File permissions:', fileInfo.data.permissions?.map(p => p.emailAddress).join(', '));
     } catch (error: any) {
       console.log('❌ Cannot access template file:', error.message);
-      console.log('This means the authenticated user does not have access to this file');
+      console.log('This means the service account does not have access to this file');
+      throw new Error(`Cannot access template file: ${error.message}`);
     }
+
+    // Initialize Google Drive and Sheets APIs with service account
+    const drive = google.drive({ version: 'v3', auth: serviceAccountAuth });
+    const sheets = google.sheets({ version: 'v4', auth: serviceAccountAuth });
 
     // 1. Copy the template file
     const copyResponse = await drive.files.copy({
