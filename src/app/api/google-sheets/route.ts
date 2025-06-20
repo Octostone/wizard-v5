@@ -25,13 +25,13 @@ const serviceAccountAuth = new google.auth.JWT({
 });
 
 // Template sheet ID - this should be stored in environment variables
-const TEMPLATE_SHEET_ID = process.env.TEMPLATE_SHEET_ID;
+const TEMPLATE_SHEET_ID = process.env.GOOGLE_TEMPLATE_SHEET_ID;
 
 export async function POST(request: Request) {
   try {
     // Debug: Log environment variables (remove in production)
     console.log('Environment variables check:');
-    console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_TEMPLATE_SHEET_ID:', process.env.GOOGLE_TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
     console.log('GOOGLE_SERVICE_ACCOUNT_EMAIL:', process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 'SET' : 'NOT SET');
     console.log('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY:', process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ? 'SET' : 'NOT SET');
     
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     } = body;
 
     if (!TEMPLATE_SHEET_ID) {
-      throw new Error('TEMPLATE_SHEET_ID environment variable is not set');
+      throw new Error('GOOGLE_TEMPLATE_SHEET_ID environment variable is not set');
     }
     if (!outputFileName) {
       throw new Error('outputFileName is required');
