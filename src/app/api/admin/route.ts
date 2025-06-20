@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import fs from 'fs';
+import path from 'path';
 
 // Type definitions
 interface AccountManager {
@@ -35,7 +36,7 @@ const defaultAdminData: AdminData = {
   pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
 };
 
-// In-memory storage fallback
+// In-memory storage for Vercel (since file system is read-only)
 let inMemoryData: AdminData | null = null;
 
 // Helper function to convert old string format to new object format
@@ -48,55 +49,21 @@ const migrateAccountManagers = (accountManagers: any[]): Array<{name: string, em
   });
 };
 
-// Helper function to get admin data with fallback
+// Helper function to get admin data
 const getAdminData = async (): Promise<AdminData> => {
   try {
-    console.log('GET /api/admin - Attempting to fetch from KV');
-    const data = await kv.get('admin_data') as AdminData | null;
-    
-    if (data) {
-      console.log('GET /api/admin - Found data in KV:', data);
-      
-      // Migrate account managers if they're still in old format
-      if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
-        data.accountManagers = migrateAccountManagers(data.accountManagers);
-        // Save the migrated data back to KV
-        await kv.set('admin_data', data);
-        console.log('GET /api/admin - Migrated and saved data');
-      }
-      
-      return data;
-    } else {
-      console.log('GET /api/admin - No data found in KV, using defaults');
-      // Initialize with default data
-      await kv.set('admin_data', defaultAdminData);
-      return defaultAdminData;
-    }
-  } catch (error) {
-    console.error('GET /api/admin - KV error, using in-memory fallback:', error);
-    // Fallback to in-memory storage
+    // In Vercel, we can't write to the file system, so we use in-memory storage
     if (inMemoryData) {
       console.log('GET /api/admin - Using in-memory data');
       return inMemoryData;
     } else {
-      console.log('GET /api/admin - Using default data in memory');
+      console.log('GET /api/admin - Using default data');
       inMemoryData = defaultAdminData;
       return defaultAdminData;
     }
-  }
-};
-
-// Helper function to save admin data with fallback
-const saveAdminData = async (data: AdminData): Promise<void> => {
-  try {
-    console.log('POST /api/admin - Attempting to save to KV');
-    await kv.set('admin_data', data);
-    console.log('POST /api/admin - Successfully saved to KV');
   } catch (error) {
-    console.error('POST /api/admin - KV error, using in-memory fallback:', error);
-    // Fallback to in-memory storage
-    inMemoryData = data;
-    console.log('POST /api/admin - Saved to in-memory storage');
+    console.error('GET /api/admin - Error getting data:', error);
+    return defaultAdminData;
   }
 };
 
@@ -169,8 +136,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
     }
     
-    // Save data using the fallback function
-    await saveAdminData(data);
+    // Save to in-memory storage
+    inMemoryData = data;
+    console.log('POST /api/admin - Successfully saved to in-memory storage');
     
     return NextResponse.json({ success: true });
   } catch (error) {
