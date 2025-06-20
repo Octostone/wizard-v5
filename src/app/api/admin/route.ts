@@ -35,6 +35,9 @@ const defaultAdminData: AdminData = {
   pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
 };
 
+// In-memory storage fallback
+let inMemoryData: AdminData | null = null;
+
 // Helper function to convert old string format to new object format
 const migrateAccountManagers = (accountManagers: any[]): Array<{name: string, email: string}> => {
   return accountManagers.map(manager => {
@@ -70,9 +73,30 @@ const getAdminData = async (): Promise<AdminData> => {
       return defaultAdminData;
     }
   } catch (error) {
-    console.error('GET /api/admin - Error fetching from KV:', error);
-    console.log('GET /api/admin - Falling back to default data');
-    return defaultAdminData;
+    console.error('GET /api/admin - KV error, using in-memory fallback:', error);
+    // Fallback to in-memory storage
+    if (inMemoryData) {
+      console.log('GET /api/admin - Using in-memory data');
+      return inMemoryData;
+    } else {
+      console.log('GET /api/admin - Using default data in memory');
+      inMemoryData = defaultAdminData;
+      return defaultAdminData;
+    }
+  }
+};
+
+// Helper function to save admin data with fallback
+const saveAdminData = async (data: AdminData): Promise<void> => {
+  try {
+    console.log('POST /api/admin - Attempting to save to KV');
+    await kv.set('admin_data', data);
+    console.log('POST /api/admin - Successfully saved to KV');
+  } catch (error) {
+    console.error('POST /api/admin - KV error, using in-memory fallback:', error);
+    // Fallback to in-memory storage
+    inMemoryData = data;
+    console.log('POST /api/admin - Saved to in-memory storage');
   }
 };
 
@@ -145,10 +169,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
     }
     
-    // Save data to Vercel KV
-    console.log('POST /api/admin - Saving to KV:', data);
-    await kv.set('admin_data', data);
-    console.log('POST /api/admin - Successfully saved to KV');
+    // Save data using the fallback function
+    await saveAdminData(data);
     
     return NextResponse.json({ success: true });
   } catch (error) {
