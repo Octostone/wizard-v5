@@ -1,10 +1,23 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
+// Helper function to properly format the private key
+function formatPrivateKey(key: string | undefined): string | undefined {
+  if (!key) return undefined;
+  
+  // Remove any existing formatting and ensure proper line breaks
+  return key
+    .replace(/\\n/g, '\n')  // Replace \n with actual line breaks
+    .replace(/\\r/g, '\r')  // Replace \r with actual carriage returns
+    .replace(/\\t/g, '\t')  // Replace \t with actual tabs
+    .replace(/\\/g, '')     // Remove any remaining backslashes
+    .trim();                // Remove leading/trailing whitespace
+}
+
 // Initialize service account authentication using JWT
 const serviceAccountAuth = new google.auth.JWT({
   email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-  key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  key: formatPrivateKey(process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY),
   scopes: [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/spreadsheets'
