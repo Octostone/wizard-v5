@@ -13,7 +13,15 @@ function formatPrivateKey(key: string | undefined): string | undefined {
     .trim();
 }
 
+export async function GET() {
+  return await createTestFile();
+}
+
 export async function POST() {
+  return await createTestFile();
+}
+
+async function createTestFile() {
   try {
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -24,44 +32,32 @@ export async function POST() {
     await auth.authorize();
     const drive = google.drive({ version: 'v3', auth });
 
-    // Create a test file in the shared drive
-    const sharedDriveId = '0AGeXmCblyF6rUk9PVA'; // From diagnostic results
-
+    // Create a test file
     const fileMetadata = {
       name: 'Test File - Service Account Access',
-      mimeType: 'application/vnd.google-apps.spreadsheet',
-      parents: [sharedDriveId]
+      mimeType: 'application/vnd.google-apps.document',
+      parents: [] // This will create it in the service account's root
     };
 
     const file = await drive.files.create({
       requestBody: fileMetadata,
-      supportsAllDrives: true
-    });
-
-    const fileId = file.data.id;
-
-    // Test if we can access the file we just created
-    const fileInfo = await drive.files.get({
-      fileId: fileId!,
-      supportsAllDrives: true,
-      fields: 'id,name,permissions'
+      fields: 'id,name,webViewLink'
     });
 
     return NextResponse.json({
       success: true,
-      createdFile: {
-        id: fileId,
-        name: fileInfo.data.name,
-        url: `https://docs.google.com/spreadsheets/d/${fileId}`
-      },
-      message: 'Service account successfully created and accessed a file'
+      message: 'Test file created successfully',
+      fileId: file.data.id,
+      fileName: file.data.name,
+      webViewLink: file.data.webViewLink
     });
 
   } catch (error: any) {
     console.error('Error creating test file:', error);
     return NextResponse.json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error.toString()
     }, { status: 500 });
   }
 } 
