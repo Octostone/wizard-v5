@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 
 // Initialize service account authentication using JWT
 const serviceAccountAuth = new google.auth.JWT({
-  email: process.env.GOOGLE_CLIENT_EMAIL,
-  key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   scopes: [
     'https://www.googleapis.com/auth/drive.file',
     'https://www.googleapis.com/auth/spreadsheets'
@@ -19,8 +19,8 @@ export async function POST(request: Request) {
     // Debug: Log environment variables (remove in production)
     console.log('Environment variables check:');
     console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_CLIENT_EMAIL:', process.env.GOOGLE_CLIENT_EMAIL ? 'SET' : 'NOT SET');
-    console.log('GOOGLE_PRIVATE_KEY:', process.env.GOOGLE_PRIVATE_KEY ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_SERVICE_ACCOUNT_EMAIL:', process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY:', process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY ? 'SET' : 'NOT SET');
     
     const body = await request.json();
     const { 
