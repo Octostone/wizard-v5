@@ -12,16 +12,26 @@ const ensureDataDir = () => {
   }
 };
 
+// Helper function to convert old string format to new object format
+const migrateAccountManagers = (accountManagers: any[]): Array<{name: string, email: string}> => {
+  return accountManagers.map(manager => {
+    if (typeof manager === 'string') {
+      return { name: manager, email: '' };
+    }
+    return manager;
+  });
+};
+
 // Initialize data file if it doesn't exist
 const initDataFile = () => {
   ensureDataDir();
   if (!fs.existsSync(dataFilePath)) {
     const initialData = {
       accountManagers: [
-        'James',
-        'Jason',
-        'Marina',
-        'Zhaowen'
+        { name: 'James', email: '' },
+        { name: 'Jason', email: '' },
+        { name: 'Marina', email: '' },
+        { name: 'Zhaowen', email: '' }
       ],
       geoOptions: ['US', 'CA', 'UK', 'AU'],
       osOptions: ['iOS', 'Android'],
@@ -40,15 +50,24 @@ const initDataFile = () => {
     }
   }
   try {
-    return JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
+    const data = JSON.parse(fs.readFileSync(dataFilePath, 'utf8'));
+    
+    // Migrate account managers if they're still in old format
+    if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
+      data.accountManagers = migrateAccountManagers(data.accountManagers);
+      // Save the migrated data
+      fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2));
+    }
+    
+    return data;
   } catch (error) {
     console.error('Error reading data file:', error);
     return {
       accountManagers: [
-        'James',
-        'Jason',
-        'Marina',
-        'Zhaowen'
+        { name: 'James', email: '' },
+        { name: 'Jason', email: '' },
+        { name: 'Marina', email: '' },
+        { name: 'Zhaowen', email: '' }
       ],
       geoOptions: ['US', 'CA', 'UK', 'AU'],
       osOptions: ['iOS', 'Android'],
@@ -76,10 +95,21 @@ export async function POST(request: NextRequest) {
     ensureDataDir();
     const data = await request.json();
     
-    // Validate data
+    // Validate account managers data
     if (!data.accountManagers || !Array.isArray(data.accountManagers)) {
       return NextResponse.json({ error: 'Invalid accountManagers data' }, { status: 400 });
     }
+    
+    // Ensure account managers are in the correct format
+    data.accountManagers = data.accountManagers.map((manager: any) => {
+      if (typeof manager === 'string') {
+        return { name: manager, email: '' };
+      }
+      return {
+        name: manager.name || '',
+        email: manager.email || ''
+      };
+    });
     
     if (!data.geoOptions || !Array.isArray(data.geoOptions)) {
       return NextResponse.json({ error: 'Invalid geoOptions data' }, { status: 400 });

@@ -6,9 +6,14 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import ClearButton from "../../components/ClearButton";
 
+interface AccountManager {
+  name: string;
+  email: string;
+}
+
 export default function AddAnApp() {
   const { form, setField } = useFormContext();
-  const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [osOptions, setOsOptions] = useState<string[]>([]);
   const [category1Options, setCategory1Options] = useState<string[]>([]);
   const [category2Options, setCategory2Options] = useState<string[]>([]);
@@ -20,7 +25,18 @@ export default function AddAnApp() {
     fetch("/api/admin")
       .then(res => res.json())
       .then(data => {
-        setAccountManagers(data.accountManagers || []);
+        // Handle both old string format and new object format
+        if (data.accountManagers && data.accountManagers.length > 0) {
+          if (typeof data.accountManagers[0] === 'string') {
+            // Convert old string format to new object format
+            setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+          } else {
+            // Already in new object format
+            setAccountManagers(data.accountManagers);
+          }
+        } else {
+          setAccountManagers([]);
+        }
         setOsOptions(data.osOptions || []);
         setCategory1Options(data.category1Options || ["Cat", "Dog", "Bird"]);
         setCategory2Options(data.category2Options || ["Cat", "Dog", "Bird"]);
@@ -47,6 +63,9 @@ export default function AddAnApp() {
     const value = e.target.value.replace(/[^0-9]/g, '');
     setField("retributionDays", value);
   };
+
+  // Helper to remove line breaks
+  const stripLineBreaks = (value: string) => value.replace(/[\r\n]+/g, " ");
 
   return (
     <div className={styles.page}>
@@ -94,7 +113,7 @@ export default function AddAnApp() {
                 Account Manager*
               </option>
               {accountManagers.map((manager) => (
-                <option key={manager} value={manager}>{manager}</option>
+                <option key={manager.name} value={manager.name}>{manager.name}</option>
               ))}
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>
@@ -118,7 +137,7 @@ export default function AddAnApp() {
               type="text"
               required
               value={form.appName}
-              onChange={e => setField("appName", e.target.value)}
+              onChange={e => setField("appName", stripLineBreaks(e.target.value))}
               onKeyDown={preventLineBreaks}
               placeholder="This will be the common name used in Flourish"
             />

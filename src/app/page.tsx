@@ -5,33 +5,47 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormContext } from "../context/FormContext";
 
+interface AccountManager {
+  name: string;
+  email: string;
+}
+
 export default function Home() {
-  const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const { form, setField } = useFormContext();
 
-  useEffect(() => {
-    const fetchAccountManagers = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const res = await fetch("/api/admin");
-        if (!res.ok) {
-          throw new Error('Failed to fetch account managers');
+  const fetchAccountManagers = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch("/api/admin");
+      const data = await response.json();
+      
+      // Handle both old string format and new object format
+      if (data.accountManagers && data.accountManagers.length > 0) {
+        if (typeof data.accountManagers[0] === 'string') {
+          // Convert old string format to new object format
+          setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+        } else {
+          // Already in new object format
+          setAccountManagers(data.accountManagers);
         }
-        const data = await res.json();
-        setAccountManagers(data.accountManagers || []);
-      } catch (err) {
-        console.error('Error fetching account managers:', err);
-        setError('Failed to load account managers. Please try refreshing the page.');
+      } else {
         setAccountManagers([]);
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch account managers:", error);
+      setError('Failed to load account managers. Please try refreshing the page.');
+      setAccountManagers([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchAccountManagers();
   }, []);
 
@@ -58,7 +72,7 @@ export default function Home() {
                 {isLoading ? 'Loading...' : 'Account Manager*'}
               </option>
               {accountManagers.map((manager) => (
-                <option key={manager} value={manager}>{manager}</option>
+                <option key={manager.name} value={manager.name}>{manager.name}</option>
               ))}
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>

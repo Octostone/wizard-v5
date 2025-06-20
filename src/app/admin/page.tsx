@@ -20,12 +20,21 @@ import Link from "next/link";
 
 const ADMIN_PASSWORD = "admin123";
 
-// Simulated API data for now
+// Types for account managers
+interface AccountManager {
+  name: string;
+  email: string;
+}
 
 type CrudManagerProps = {
   label: string;
   items: string[];
   setItems: React.Dispatch<React.SetStateAction<string[]>>;
+};
+
+type AccountManagerManagerProps = {
+  accountManagers: AccountManager[];
+  setAccountManagers: React.Dispatch<React.SetStateAction<AccountManager[]>>;
 };
 
 interface SortableItemProps {
@@ -39,6 +48,21 @@ interface SortableItemProps {
   isEditing: boolean;
   editValue: string;
   setEditValue: (value: string) => void;
+}
+
+interface SortableAccountManagerItemProps {
+  id: string;
+  index: number;
+  manager: AccountManager;
+  onEdit: (index: number) => void;
+  onDelete: (index: number) => void;
+  onEditSave: (index: number, name: string, email: string) => void;
+  onEditCancel: () => void;
+  isEditing: boolean;
+  editName: string;
+  editEmail: string;
+  setEditName: (value: string) => void;
+  setEditEmail: (value: string) => void;
 }
 
 function DragHandle() {
@@ -93,6 +117,88 @@ function SortableItem({ id, index, item, onEdit, onDelete, onEditSave, onEditCan
       ) : (
         <>
           <span style={{ flex: 1, color: '#111' }}>{item}</span>
+          <button className={styles.actionButton} style={{ minWidth: 50 }} type="button" onClick={() => onEdit(index)}>
+            Edit
+          </button>
+          <button className={styles.actionButton} style={{ minWidth: 50, background: '#eee', color: '#333' }} type="button" onClick={() => onDelete(index)}>
+            Delete
+          </button>
+        </>
+      )}
+    </li>
+  );
+}
+
+function SortableAccountManagerItem({ 
+  id, 
+  index, 
+  manager, 
+  onEdit, 
+  onDelete, 
+  onEditSave, 
+  onEditCancel, 
+  isEditing, 
+  editName, 
+  editEmail, 
+  setEditName, 
+  setEditEmail 
+}: SortableAccountManagerItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 6,
+    background: isDragging ? '#f0f4ff' : undefined,
+  };
+
+  return (
+    <li ref={setNodeRef} style={style} {...attributes}>
+      <span {...listeners} className={styles.dragHandle}>
+        <DragHandle />
+      </span>
+      {isEditing ? (
+        <>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <input
+              className={styles.input}
+              placeholder="Name"
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && onEditSave(index, editName, editEmail)}
+            />
+            <input
+              className={styles.input}
+              placeholder="Email"
+              value={editEmail}
+              onChange={e => setEditEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && onEditSave(index, editName, editEmail)}
+            />
+          </div>
+          <button className={styles.actionButton} style={{ minWidth: 50 }} type="button" onClick={() => onEditSave(index, editName, editEmail)}>
+            Save
+          </button>
+          <button className={styles.actionButton} style={{ minWidth: 50, background: '#eee', color: '#333' }} type="button" onClick={onEditCancel}>
+            Cancel
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: '#111', fontWeight: 'bold' }}>{manager.name}</div>
+            <div style={{ color: '#666', fontSize: '0.9em' }}>{manager.email || 'No email set'}</div>
+          </div>
           <button className={styles.actionButton} style={{ minWidth: 50 }} type="button" onClick={() => onEdit(index)}>
             Edit
           </button>
@@ -192,12 +298,117 @@ function CrudManager({ label, items, setItems }: CrudManagerProps) {
   );
 }
 
+function AccountManagerManager({ accountManagers, setAccountManagers }: AccountManagerManagerProps) {
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [editIdx, setEditIdx] = useState<number>(-1);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+
+  // dnd-kit setup
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id !== over?.id && over) {
+      const oldIndex = accountManagers.findIndex((manager) => manager.name === active.id);
+      const newIndex = accountManagers.findIndex((manager) => manager.name === over.id);
+      setAccountManagers(arrayMove(accountManagers, oldIndex, newIndex));
+    }
+  };
+
+  const handleAdd = () => {
+    if (newName.trim() && !accountManagers.some(manager => manager.name === newName.trim())) {
+      setAccountManagers([...accountManagers, { name: newName.trim(), email: newEmail.trim() }]);
+      setNewName("");
+      setNewEmail("");
+    }
+  };
+
+  const handleDelete = (idx: number) => {
+    setAccountManagers(accountManagers.filter((_, i) => i !== idx));
+  };
+
+  const handleEdit = (idx: number) => {
+    setEditIdx(idx);
+    setEditName(accountManagers[idx].name);
+    setEditEmail(accountManagers[idx].email);
+  };
+
+  const handleEditSave = (idx: number, name: string, email: string) => {
+    if (name.trim() && !accountManagers.some((manager, i) => i !== idx && manager.name === name.trim())) {
+      setAccountManagers(accountManagers.map((manager, i) => 
+        i === idx ? { name: name.trim(), email: email.trim() } : manager
+      ));
+      setEditIdx(-1);
+      setEditName("");
+      setEditEmail("");
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditIdx(-1);
+    setEditName("");
+    setEditEmail("");
+  };
+
+  return (
+    <div className={styles.adminCrudContainer}>
+      <h2 style={{ color: 'var(--color-header)', marginBottom: 16, textAlign: 'center' }}>Account Managers</h2>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+        <input
+          className={styles.input}
+          type="text"
+          placeholder="Account Manager Name"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+        />
+        <input
+          className={styles.input}
+          type="email"
+          placeholder="Email Address"
+          value={newEmail}
+          onChange={e => setNewEmail(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+        />
+        <button className={styles.actionButton} type="button" onClick={handleAdd}>
+          Add Account Manager
+        </button>
+      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={accountManagers.map(m => m.name)} strategy={verticalListSortingStrategy}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {accountManagers.map((manager, idx) => (
+              <SortableAccountManagerItem
+                key={manager.name}
+                id={manager.name}
+                index={idx}
+                manager={manager}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onEditSave={handleEditSave}
+                onEditCancel={handleEditCancel}
+                isEditing={editIdx === idx}
+                editName={editName}
+                editEmail={editEmail}
+                setEditName={setEditName}
+                setEditEmail={setEditEmail}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(false);
   const [error, setError] = useState("");
 
-  const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [geo, setGeo] = useState<string[]>([]);
   const [os, setOs] = useState<string[]>([]);
   const [category1, setCategory1] = useState<string[]>([]);
@@ -213,7 +424,12 @@ export default function AdminPage() {
       fetch("/api/admin")
         .then(res => res.json())
         .then(data => {
-          setAccountManagers(data.accountManagers || []);
+          // Handle migration from old format
+          if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
+            setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+          } else {
+            setAccountManagers(data.accountManagers || []);
+          }
           setGeo(data.geoOptions || []);
           setOs(data.osOptions || []);
           setCategory1(data.category1Options || ["Cat", "Dog", "Bird"]);
@@ -301,7 +517,7 @@ export default function AdminPage() {
           </form>
         ) : (
           <div className={styles.adminGrid}>
-            <CrudManager label="Account Managers" items={accountManagers} setItems={setAccountManagers} />
+            <AccountManagerManager accountManagers={accountManagers} setAccountManagers={setAccountManagers} />
             <CrudManager label="Geo" items={geo} setItems={setGeo} />
             <CrudManager label="OS" items={os} setItems={setOs} />
             <CrudManager label="Category 1" items={category1} setItems={setCategory1} />

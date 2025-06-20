@@ -6,9 +6,14 @@ import { useRouter, usePathname } from "next/navigation";
 import { useFormContext } from "../../context/FormContext";
 import ClearButton from "../../components/ClearButton";
 
+interface AccountManager {
+  name: string;
+  email: string;
+}
+
 export default function AddCampaign() {
   const { form, setField } = useFormContext();
-  const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [pricingModels, setPricingModels] = useState<string[]>(["CPI", "Hybrid", "CPA"]);
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
@@ -22,7 +27,18 @@ export default function AddCampaign() {
     fetch("/api/admin")
       .then(res => res.json())
       .then(data => {
-        setAccountManagers(data.accountManagers || []);
+        // Handle both old string format and new object format
+        if (data.accountManagers && data.accountManagers.length > 0) {
+          if (typeof data.accountManagers[0] === 'string') {
+            // Convert old string format to new object format
+            setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+          } else {
+            // Already in new object format
+            setAccountManagers(data.accountManagers);
+          }
+        } else {
+          setAccountManagers([]);
+        }
         setGeoOptions(data.geoOptions || []);
         setPricingModels(data.pricingModelOptions || ["CPI", "Hybrid", "CPA"]);
         setCarouselSpotlightOptions(data.carouselSpotlightOptions || ["Carousel", "Spotlight"]);
@@ -88,6 +104,9 @@ export default function AddCampaign() {
     return "";
   };
 
+  // Helper to remove line breaks
+  const stripLineBreaks = (value: string) => value.replace(/[\r\n]+/g, " ");
+
   return (
     <div className={styles.page}>
       <div className={styles.centeredCard}>
@@ -133,7 +152,7 @@ export default function AddCampaign() {
             >
               <option value="" disabled>Account Manager*</option>
               {accountManagers.map((manager) => (
-                <option key={manager} value={manager}>{manager}</option>
+                <option key={manager.name} value={manager.name}>{manager.name}</option>
               ))}
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>

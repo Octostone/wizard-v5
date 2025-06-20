@@ -6,16 +6,34 @@ import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import ClearButton from "../../components/ClearButton";
 
+interface AccountManager {
+  name: string;
+  email: string;
+}
+
 export default function ClientBasics() {
   const { form, setField } = useFormContext();
-  const [accountManagers, setAccountManagers] = useState<string[]>([]);
+  const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     fetch("/api/admin")
       .then(res => res.json())
-      .then(data => setAccountManagers(data.accountManagers || []))
+      .then(data => {
+        // Handle both old string format and new object format
+        if (data.accountManagers && data.accountManagers.length > 0) {
+          if (typeof data.accountManagers[0] === 'string') {
+            // Convert old string format to new object format
+            setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+          } else {
+            // Already in new object format
+            setAccountManagers(data.accountManagers);
+          }
+        } else {
+          setAccountManagers([]);
+        }
+      })
       .catch(() => setAccountManagers([]));
   }, []);
 
@@ -68,7 +86,7 @@ export default function ClientBasics() {
                 Account Manager*
               </option>
               {accountManagers.map((manager) => (
-                <option key={manager} value={manager}>{manager}</option>
+                <option key={manager.name} value={manager.name}>{manager.name}</option>
               ))}
             </select>
             <label className={styles.floatingLabel}>Account Manager</label>
