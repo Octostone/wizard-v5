@@ -1,7 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { kv } from '@vercel/kv';
 
-// In-memory storage for development (will be replaced with proper database later)
-let adminData = {
+// Type definitions
+interface AccountManager {
+  name: string;
+  email: string;
+}
+
+interface AdminData {
+  accountManagers: AccountManager[];
+  geoOptions: string[];
+  osOptions: string[];
+  category1Options: string[];
+  category2Options: string[];
+  category3Options: string[];
+  eventTypeOptions: string[];
+  pubRevSourceOptions: string[];
+}
+
+// Default data structure
+const defaultAdminData: AdminData = {
   accountManagers: [
     { name: 'James', email: '' },
     { name: 'Jason', email: '' },
@@ -27,10 +45,42 @@ const migrateAccountManagers = (accountManagers: any[]): Array<{name: string, em
   });
 };
 
+// Helper function to get admin data with fallback
+const getAdminData = async (): Promise<AdminData> => {
+  try {
+    console.log('GET /api/admin - Attempting to fetch from KV');
+    const data = await kv.get('admin_data') as AdminData | null;
+    
+    if (data) {
+      console.log('GET /api/admin - Found data in KV:', data);
+      
+      // Migrate account managers if they're still in old format
+      if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
+        data.accountManagers = migrateAccountManagers(data.accountManagers);
+        // Save the migrated data back to KV
+        await kv.set('admin_data', data);
+        console.log('GET /api/admin - Migrated and saved data');
+      }
+      
+      return data;
+    } else {
+      console.log('GET /api/admin - No data found in KV, using defaults');
+      // Initialize with default data
+      await kv.set('admin_data', defaultAdminData);
+      return defaultAdminData;
+    }
+  } catch (error) {
+    console.error('GET /api/admin - Error fetching from KV:', error);
+    console.log('GET /api/admin - Falling back to default data');
+    return defaultAdminData;
+  }
+};
+
 export async function GET() {
   try {
-    console.log('GET /api/admin - Returning data:', adminData);
-    return NextResponse.json(adminData);
+    const data = await getAdminData();
+    console.log('GET /api/admin - Returning data:', data);
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error reading admin data:', error);
     return NextResponse.json({ error: 'Failed to read admin data' }, { status: 500 });
@@ -95,9 +145,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
     }
     
-    // Save data to in-memory storage
-    adminData = data;
-    console.log('POST /api/admin - Successfully saved data:', adminData);
+    // Save data to Vercel KV
+    console.log('POST /api/admin - Saving to KV:', data);
+    await kv.set('admin_data', data);
+    console.log('POST /api/admin - Successfully saved to KV');
     
     return NextResponse.json({ success: true });
   } catch (error) {
