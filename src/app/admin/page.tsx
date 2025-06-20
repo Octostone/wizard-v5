@@ -443,10 +443,8 @@ export default function AdminPage() {
 
   const handleSave = async () => {
     setSaveStatus('saving');
-    const res = await fetch("/api/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
+    try {
+      const saveData = { 
         accountManagers, 
         geoOptions: geo, 
         osOptions: os,
@@ -455,14 +453,29 @@ export default function AdminPage() {
         category3Options: category3,
         eventTypeOptions: eventTypes,
         pubRevSourceOptions: pubRevSources
-      })
-    });
-    if (res.ok) {
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-    } else {
+      };
+      
+      console.log('Saving data:', saveData);
+      
+      const res = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(saveData)
+      });
+      
+      if (res.ok) {
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        const errorData = await res.text();
+        console.error('Save failed:', res.status, errorData);
+        setSaveStatus('idle');
+        alert(`Failed to save changes. Status: ${res.status}. Error: ${errorData}`);
+      }
+    } catch (error) {
+      console.error('Save error:', error);
       setSaveStatus('idle');
-      alert("Failed to save changes.");
+      alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
