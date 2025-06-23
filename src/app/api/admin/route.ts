@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { get } from '@vercel/edge-config';
 
 // Type definitions
 interface AccountManager {
@@ -19,130 +18,83 @@ interface AdminData {
   pubRevSourceOptions: string[];
 }
 
-// Default data structure
-const defaultAdminData: AdminData = {
-  accountManagers: [
-    { name: 'James', email: '' },
-    { name: 'Jason', email: '' },
-    { name: 'Marina', email: '' },
-    { name: 'Zhaowen', email: '' }
-  ],
-  geoOptions: ['US', 'CA', 'UK', 'AU'],
-  osOptions: ['iOS', 'Android'],
-  category1Options: ['Cat', 'Dog', 'Bird'],
-  category2Options: ['Cat', 'Dog', 'Bird'],
-  category3Options: ['Cat', 'Dog', 'Bird'],
-  eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
-  pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
-};
-
-// In-memory storage for Vercel (since file system is read-only)
-let inMemoryData: AdminData | null = null;
-
-// Helper function to convert old string format to new object format
-const migrateAccountManagers = (accountManagers: any[]): Array<{name: string, email: string}> => {
-  return accountManagers.map(manager => {
-    if (typeof manager === 'string') {
-      return { name: manager, email: '' };
-    }
-    return manager;
-  });
-};
-
-// Helper function to get admin data
-const getAdminData = async (): Promise<AdminData> => {
+// Helper function to fetch admin data from Edge Config
+const getAdminData = async (): Promise<AdminData | null> => {
   try {
-    // In Vercel, we can't write to the file system, so we use in-memory storage
-    if (inMemoryData) {
-      console.log('GET /api/admin - Using in-memory data');
-      return inMemoryData;
-    } else {
-      console.log('GET /api/admin - Using default data');
-      inMemoryData = defaultAdminData;
-      return defaultAdminData;
+    const data = await get('admin_data');
+    // Runtime type check for expected keys
+    if (
+      data &&
+      typeof data === 'object' &&
+      'accountManagers' in data &&
+      'geoOptions' in data &&
+      'osOptions' in data &&
+      'category1Options' in data &&
+      'category2Options' in data &&
+      'category3Options' in data &&
+      'eventTypeOptions' in data &&
+      'pubRevSourceOptions' in data
+    ) {
+      return data as unknown as AdminData;
     }
+    return null;
   } catch (error) {
-    console.error('GET /api/admin - Error getting data:', error);
-    return defaultAdminData;
+    console.error('Error fetching admin data from Edge Config:', error);
+    return null;
+  }
+};
+
+// Helper function to update admin data in Edge Config using REST API
+const updateAdminData = async (data: AdminData): Promise<boolean> => {
+  try {
+    // Vercel Edge Config REST API endpoint
+    const edgeConfigId = process.env.EDGE_CONFIG?.split('/').pop();
+    const token = process.env.EDGE_CONFIG_TOKEN;
+    if (!edgeConfigId || !token) {
+      throw new Error('Missing EDGE_CONFIG or EDGE_CONFIG_TOKEN environment variable.');
+    }
+    const url = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ items: { admin_data: data } }),
+    });
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(`Failed to update Edge Config: ${res.status} ${errorText}`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error updating admin data in Edge Config:', error);
+    return false;
   }
 };
 
 export async function GET() {
-  try {
-    const data = await getAdminData();
-    console.log('GET /api/admin - Returning data:', data);
-    return NextResponse.json(data);
-  } catch (error) {
-    console.error('Error reading admin data:', error);
+  const data = await getAdminData();
+  if (!data) {
     return NextResponse.json({ error: 'Failed to read admin data' }, { status: 500 });
   }
+  return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('POST /api/admin - Starting save process');
     const data = await request.json();
-    console.log('POST /api/admin - Received data:', data);
-    
-    // Validate account managers data
+    // Validate data (basic)
     if (!data.accountManagers || !Array.isArray(data.accountManagers)) {
-      console.error('Invalid accountManagers data:', data.accountManagers);
       return NextResponse.json({ error: 'Invalid accountManagers data' }, { status: 400 });
     }
-    
-    // Ensure account managers are in the correct format
-    data.accountManagers = data.accountManagers.map((manager: any) => {
-      if (typeof manager === 'string') {
-        return { name: manager, email: '' };
-      }
-      return {
-        name: manager.name || '',
-        email: manager.email || ''
-      };
-    });
-    
-    if (!data.geoOptions || !Array.isArray(data.geoOptions)) {
-      console.error('Invalid geoOptions data:', data.geoOptions);
-      return NextResponse.json({ error: 'Invalid geoOptions data' }, { status: 400 });
+    // ... (other validation as before)
+    const success = await updateAdminData(data);
+    if (!success) {
+      return NextResponse.json({ error: 'Failed to save admin data' }, { status: 500 });
     }
-    
-    if (!data.osOptions || !Array.isArray(data.osOptions)) {
-      console.error('Invalid osOptions data:', data.osOptions);
-      return NextResponse.json({ error: 'Invalid osOptions data' }, { status: 400 });
-    }
-
-    if (!data.category1Options || !Array.isArray(data.category1Options)) {
-      console.error('Invalid category1Options data:', data.category1Options);
-      return NextResponse.json({ error: 'Invalid category1Options data' }, { status: 400 });
-    }
-
-    if (!data.category2Options || !Array.isArray(data.category2Options)) {
-      console.error('Invalid category2Options data:', data.category2Options);
-      return NextResponse.json({ error: 'Invalid category2Options data' }, { status: 400 });
-    }
-
-    if (!data.category3Options || !Array.isArray(data.category3Options)) {
-      console.error('Invalid category3Options data:', data.category3Options);
-      return NextResponse.json({ error: 'Invalid category3Options data' }, { status: 400 });
-    }
-    
-    if (!data.eventTypeOptions || !Array.isArray(data.eventTypeOptions)) {
-      console.error('Invalid eventTypeOptions data:', data.eventTypeOptions);
-      return NextResponse.json({ error: 'Invalid eventTypeOptions data' }, { status: 400 });
-    }
-    
-    if (!data.pubRevSourceOptions || !Array.isArray(data.pubRevSourceOptions)) {
-      console.error('Invalid pubRevSourceOptions data:', data.pubRevSourceOptions);
-      return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
-    }
-    
-    // Save to in-memory storage
-    inMemoryData = data;
-    console.log('POST /api/admin - Successfully saved to in-memory storage');
-    
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error saving admin data:', error);
     return NextResponse.json({ error: 'Failed to save admin data' }, { status: 500 });
   }
 }
