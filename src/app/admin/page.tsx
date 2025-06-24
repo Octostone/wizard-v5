@@ -19,7 +19,6 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 
 const ADMIN_PASSWORD = "admin123";
-const LOCAL_STORAGE_KEY = "admin_data_backup";
 
 // Types for account managers
 interface AccountManager {
@@ -430,59 +429,28 @@ export default function AdminPage() {
   const [category3, setCategory3] = useState<string[]>([]);
   const [eventTypes, setEventTypes] = useState<string[]>(['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
   const [pubRevSources, setPubRevSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving'>('idle');
-
-  // Load data from localStorage on mount
-  useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (savedData) {
-        const parsedData: AdminData = JSON.parse(savedData);
-        setAccountManagers(parsedData.accountManagers || []);
-        setGeo(parsedData.geoOptions || []);
-        setOs(parsedData.osOptions || []);
-        setCategory1(parsedData.category1Options || ["Cat", "Dog", "Bird"]);
-        setCategory2(parsedData.category2Options || ["Cat", "Dog", "Bird"]);
-        setCategory3(parsedData.category3Options || ["Cat", "Dog", "Bird"]);
-        setEventTypes(parsedData.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
-        setPubRevSources(parsedData.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
-      }
-    } catch (error) {
-      console.error('Error loading from localStorage:', error);
-    }
-  }, []);
-
-  // Save to localStorage whenever data changes
-  useEffect(() => {
-    if (isAuthed) {
-      const dataToSave: AdminData = {
-        accountManagers,
-        geoOptions: geo,
-        osOptions: os,
-        category1Options: category1,
-        category2Options: category2,
-        category3Options: category3,
-        eventTypeOptions: eventTypes,
-        pubRevSourceOptions: pubRevSources
-      };
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
-    }
-  }, [accountManagers, geo, os, category1, category2, category3, eventTypes, pubRevSources, isAuthed]);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving' | 'error'>('idle');
+  const [apiStatus, setApiStatus] = useState<'unknown' | 'working' | 'blocked'>('unknown');
 
   // Fetch initial data from API
   useEffect(() => {
     if (isAuthed) {
+      console.log('Fetching admin data from API...');
       fetch("/api/admin")
         .then(res => {
+          console.log('API response status:', res.status);
           if (res.ok) {
+            setApiStatus('working');
             return res.json();
           } else {
-            console.log('API blocked, using localStorage data');
+            console.log('API blocked, status:', res.status);
+            setApiStatus('blocked');
             return null;
           }
         })
         .then(data => {
           if (data) {
+            console.log('Successfully loaded data from API');
             // Handle migration from old format
             if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
               setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
@@ -496,10 +464,13 @@ export default function AdminPage() {
             setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
             setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
             setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+          } else {
+            console.log('Using default data due to API issues');
           }
         })
         .catch(error => {
-          console.log('API error, using localStorage data:', error);
+          console.log('API error:', error);
+          setApiStatus('blocked');
         });
     }
   }, [isAuthed]);
@@ -507,8 +478,7 @@ export default function AdminPage() {
   const handleSave = async () => {
     setSaveStatus('saving');
     
-    // Always save to localStorage first
-    const saveData: AdminData = { 
+    const saveData = { 
       accountManagers, 
       geoOptions: geo, 
       osOptions: os,
@@ -518,8 +488,6 @@ export default function AdminPage() {
       eventTypeOptions: eventTypes,
       pubRevSourceOptions: pubRevSources
     };
-    
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saveData));
     
     try {
       console.log('Attempting to save to server...');
@@ -531,20 +499,23 @@ export default function AdminPage() {
       });
       
       if (res.ok) {
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2000);
         console.log('Successfully saved to server');
-      } else {
-        console.log('Server save failed, data saved locally only');
         setSaveStatus('saved');
+        setApiStatus('working');
         setTimeout(() => setSaveStatus('idle'), 2000);
-        alert('Data saved locally. Server sync may be unavailable due to authentication restrictions.');
+      } else {
+        console.log('Server save failed, status:', res.status);
+        const errorText = await res.text();
+        console.log('Error response:', errorText);
+        setSaveStatus('error');
+        setApiStatus('blocked');
+        alert(`Failed to save changes. Status: ${res.status}. This may be due to authentication restrictions.`);
       }
     } catch (error) {
-      console.log('Server save error, data saved locally only:', error);
-      setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
-      alert('Data saved locally. Server sync may be unavailable due to authentication restrictions.');
+      console.log('Server save error:', error);
+      setSaveStatus('error');
+      setApiStatus('blocked');
+      alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}. This may be due to authentication restrictions.`);
     }
   };
 
@@ -587,18 +558,46 @@ export default function AdminPage() {
                 Return to Landing Page
               </Link>
             </div>
+            
+            {/* API Status Indicator */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              marginBottom: 16,
+              padding: '8px 16px',
+              borderRadius: '4px',
+              backgroundColor: apiStatus === 'working' ? '#d4edda' : apiStatus === 'blocked' ? '#f8d7da' : '#fff3cd',
+              color: apiStatus === 'working' ? '#155724' : apiStatus === 'blocked' ? '#721c24' : '#856404',
+              border: `1px solid ${apiStatus === 'working' ? '#c3e6cb' : apiStatus === 'blocked' ? '#f5c6cb' : '#ffeaa7'}`
+            }}>
+              {apiStatus === 'working' && '✓ API Connection Working'}
+              {apiStatus === 'blocked' && '⚠ API Blocked - Changes may not persist'}
+              {apiStatus === 'unknown' && '⏳ Checking API connection...'}
+            </div>
+            
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
               <button
-                className={saveStatus === 'saved' ? `${styles.saveButton} ${styles.saveButtonSaved}` : styles.saveButton}
+                className={saveStatus === 'saved' ? `${styles.saveButton} ${styles.saveButtonSaved}` : 
+                         saveStatus === 'error' ? `${styles.saveButton} ${styles.saveButtonError}` : 
+                         styles.saveButton}
                 onClick={handleSaveWithReAuth}
                 disabled={saveStatus === 'saving'}
               >
-                {saveStatus === 'saved' ? 'Saved!' : saveStatus === 'saving' ? 'Saving...' : 'Save Changes'}
+                {saveStatus === 'saved' ? 'Saved!' : 
+                 saveStatus === 'saving' ? 'Saving...' : 
+                 saveStatus === 'error' ? 'Save Failed' : 'Save Changes'}
               </button>
             </div>
+            
             {saveStatus === 'saved' && (
               <div style={{ textAlign: 'center', color: 'green', marginBottom: 16 }}>
-                ✓ Data saved successfully (local + server attempt)
+                ✓ Changes saved successfully
+              </div>
+            )}
+            
+            {saveStatus === 'error' && (
+              <div style={{ textAlign: 'center', color: 'red', marginBottom: 16 }}>
+                ✗ Save failed - API may be blocked by authentication
               </div>
             )}
           </>
