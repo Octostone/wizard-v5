@@ -19,11 +19,23 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 
 const ADMIN_PASSWORD = "admin123";
+const LOCAL_STORAGE_KEY = "admin_data_backup";
 
 // Types for account managers
 interface AccountManager {
   name: string;
   email: string;
+}
+
+interface AdminData {
+  accountManagers: AccountManager[];
+  geoOptions: string[];
+  osOptions: string[];
+  category1Options: string[];
+  category2Options: string[];
+  category3Options: string[];
+  eventTypeOptions: string[];
+  pubRevSourceOptions: string[];
 }
 
 type CrudManagerProps = {
@@ -407,6 +419,8 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(false);
   const [error, setError] = useState("");
+  const [showReAuthPrompt, setShowReAuthPrompt] = useState(false);
+  const [reAuthPassword, setReAuthPassword] = useState("");
 
   const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [geo, setGeo] = useState<string[]>([]);
@@ -418,35 +432,32 @@ export default function AdminPage() {
   const [pubRevSources, setPubRevSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving'>('idle');
 
-  // Fetch initial data from API
+  // Load data from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (savedData) {
+        const parsedData: AdminData = JSON.parse(savedData);
+        setAccountManagers(parsedData.accountManagers || []);
+        setGeo(parsedData.geoOptions || []);
+        setOs(parsedData.osOptions || []);
+        setCategory1(parsedData.category1Options || ["Cat", "Dog", "Bird"]);
+        setCategory2(parsedData.category2Options || ["Cat", "Dog", "Bird"]);
+        setCategory3(parsedData.category3Options || ["Cat", "Dog", "Bird"]);
+        setEventTypes(parsedData.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
+        setPubRevSources(parsedData.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+    }
+  }, []);
+
+  // Save to localStorage whenever data changes
   useEffect(() => {
     if (isAuthed) {
-      fetch("/api/admin")
-        .then(res => res.json())
-        .then(data => {
-          // Handle migration from old format
-          if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
-            setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
-          } else {
-            setAccountManagers(data.accountManagers || []);
-          }
-          setGeo(data.geoOptions || []);
-          setOs(data.osOptions || []);
-          setCategory1(data.category1Options || ["Cat", "Dog", "Bird"]);
-          setCategory2(data.category2Options || ["Cat", "Dog", "Bird"]);
-          setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
-          setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
-          setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
-        });
-    }
-  }, [isAuthed]);
-
-  const handleSave = async () => {
-    setSaveStatus('saving');
-    try {
-      const saveData = { 
-        accountManagers, 
-        geoOptions: geo, 
+      const dataToSave: AdminData = {
+        accountManagers,
+        geoOptions: geo,
         osOptions: os,
         category1Options: category1,
         category2Options: category2,
@@ -454,8 +465,64 @@ export default function AdminPage() {
         eventTypeOptions: eventTypes,
         pubRevSourceOptions: pubRevSources
       };
-      
-      console.log('Saving data:', saveData);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+  }, [accountManagers, geo, os, category1, category2, category3, eventTypes, pubRevSources, isAuthed]);
+
+  // Fetch initial data from API
+  useEffect(() => {
+    if (isAuthed) {
+      fetch("/api/admin")
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          } else {
+            console.log('API blocked, using localStorage data');
+            return null;
+          }
+        })
+        .then(data => {
+          if (data) {
+            // Handle migration from old format
+            if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
+              setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+            } else {
+              setAccountManagers(data.accountManagers || []);
+            }
+            setGeo(data.geoOptions || []);
+            setOs(data.osOptions || []);
+            setCategory1(data.category1Options || ["Cat", "Dog", "Bird"]);
+            setCategory2(data.category2Options || ["Cat", "Dog", "Bird"]);
+            setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
+            setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
+            setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+          }
+        })
+        .catch(error => {
+          console.log('API error, using localStorage data:', error);
+        });
+    }
+  }, [isAuthed]);
+
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    
+    // Always save to localStorage first
+    const saveData: AdminData = { 
+      accountManagers, 
+      geoOptions: geo, 
+      osOptions: os,
+      category1Options: category1,
+      category2Options: category2,
+      category3Options: category3,
+      eventTypeOptions: eventTypes,
+      pubRevSourceOptions: pubRevSources
+    };
+    
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(saveData));
+    
+    try {
+      console.log('Attempting to save to server...');
       
       const res = await fetch("/api/admin", {
         method: "POST",
@@ -466,16 +533,18 @@ export default function AdminPage() {
       if (res.ok) {
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
+        console.log('Successfully saved to server');
       } else {
-        const errorData = await res.text();
-        console.error('Save failed:', res.status, errorData);
-        setSaveStatus('idle');
-        alert(`Failed to save changes. Status: ${res.status}. Error: ${errorData}`);
+        console.log('Server save failed, data saved locally only');
+        setSaveStatus('saved');
+        setTimeout(() => setSaveStatus('idle'), 2000);
+        alert('Data saved locally. Server sync may be unavailable due to authentication restrictions.');
       }
     } catch (error) {
-      console.error('Save error:', error);
-      setSaveStatus('idle');
-      alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.log('Server save error, data saved locally only:', error);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      alert('Data saved locally. Server sync may be unavailable due to authentication restrictions.');
     }
   };
 
@@ -487,6 +556,22 @@ export default function AdminPage() {
     } else {
       setError("Incorrect password");
     }
+  };
+
+  const handleReAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (reAuthPassword === ADMIN_PASSWORD) {
+      setShowReAuthPrompt(false);
+      setReAuthPassword("");
+      handleSave();
+    } else {
+      setError("Incorrect password");
+    }
+  };
+
+  const handleSaveWithReAuth = () => {
+    setShowReAuthPrompt(true);
+    setError("");
   };
 
   return (
@@ -505,12 +590,17 @@ export default function AdminPage() {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
               <button
                 className={saveStatus === 'saved' ? `${styles.saveButton} ${styles.saveButtonSaved}` : styles.saveButton}
-                onClick={handleSave}
+                onClick={handleSaveWithReAuth}
                 disabled={saveStatus === 'saving'}
               >
                 {saveStatus === 'saved' ? 'Saved!' : saveStatus === 'saving' ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
+            {saveStatus === 'saved' && (
+              <div style={{ textAlign: 'center', color: 'green', marginBottom: 16 }}>
+                ✓ Data saved successfully (local + server attempt)
+              </div>
+            )}
           </>
         )}
         {!isAuthed ? (
@@ -525,6 +615,30 @@ export default function AdminPage() {
             />
             <button className={styles.actionButton} type="submit">
               Login
+            </button>
+            {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
+          </form>
+        ) : showReAuthPrompt ? (
+          <form className={styles.form} onSubmit={handleReAuthSubmit} style={{ maxWidth: 400, margin: '0 auto' }}>
+            <h3 style={{ textAlign: 'center', marginBottom: 16 }}>Re-authenticate to Save</h3>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="Enter admin password"
+              value={reAuthPassword}
+              onChange={e => setReAuthPassword(e.target.value)}
+              required
+            />
+            <button className={styles.actionButton} type="submit">
+              Save Changes
+            </button>
+            <button 
+              className={styles.actionButton} 
+              type="button" 
+              onClick={() => setShowReAuthPrompt(false)}
+              style={{ background: '#eee', color: '#333', marginTop: 8 }}
+            >
+              Cancel
             </button>
             {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
           </form>
