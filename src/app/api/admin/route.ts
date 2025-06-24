@@ -43,29 +43,49 @@ const getAdminData = async (): Promise<AdminData> => {
   try {
     // Check if we're in production (Vercel) with Blob environment
     if (process.env.BLOB_READ_WRITE_TOKEN) {
+      console.log('Fetching admin data from Blob...');
       try {
         // List blobs to check if admin-data.json exists
         const { blobs } = await list();
+        console.log('Found blobs:', blobs.map(b => b.pathname));
+        
         const adminBlob = blobs.find(blob => blob.pathname === 'admin-data.json');
         
         if (adminBlob) {
+          console.log('Found admin-data.json blob, fetching content...');
           // Fetch the blob content
           const response = await fetch(adminBlob.url);
-          const text = await response.text();
-          return JSON.parse(text);
+          console.log('Fetch response status:', response.status);
+          
+          if (response.ok) {
+            const text = await response.text();
+            console.log('Fetched blob content length:', text.length);
+            console.log('Fetched blob content preview:', text.substring(0, 200));
+            
+            const parsedData = JSON.parse(text);
+            console.log('Successfully parsed admin data from blob');
+            return parsedData;
+          } else {
+            console.error('Failed to fetch blob content, status:', response.status);
+          }
+        } else {
+          console.log('admin-data.json blob not found, will initialize with default data');
         }
       } catch (error) {
-        console.log('Blob not found, will initialize with default data');
+        console.error('Error reading from blob:', error);
       }
       
       // Initialize with default data in Blob
+      console.log('Initializing with default data in Blob...');
       await put('admin-data.json', JSON.stringify(defaultAdminData), {
         access: 'public',
         allowOverwrite: true,
       });
+      console.log('Successfully initialized default data in Blob');
       return defaultAdminData;
     } else {
       // Local development fallback
+      console.log('Using local in-memory storage for admin data');
       if (inMemoryData) {
         return inMemoryData;
       }
