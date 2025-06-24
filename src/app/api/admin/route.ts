@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { get } from '@vercel/edge-config';
+import { kv } from '@vercel/kv';
 
 // Type definitions
 interface AccountManager {
@@ -18,83 +18,105 @@ interface AdminData {
   pubRevSourceOptions: string[];
 }
 
-// Helper function to fetch admin data from Edge Config
-const getAdminData = async (): Promise<AdminData | null> => {
+// Default data structure
+const defaultAdminData: AdminData = {
+  accountManagers: [
+    { name: 'James', email: '' },
+    { name: 'Jason', email: '' },
+    { name: 'Marina', email: '' },
+    { name: 'Zhaowen', email: '' }
+  ],
+  geoOptions: ['US', 'CA', 'UK', 'AU'],
+  osOptions: ['iOS', 'Android'],
+  category1Options: ['Cat', 'Dog', 'Bird'],
+  category2Options: ['Cat', 'Dog', 'Bird'],
+  category3Options: ['Cat', 'Dog', 'Bird'],
+  eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
+  pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
+};
+
+// Helper function to fetch admin data from KV
+const getAdminData = async (): Promise<AdminData> => {
   try {
-    const data = await get('admin_data');
-    // Runtime type check for expected keys
-    if (
-      data &&
-      typeof data === 'object' &&
-      'accountManagers' in data &&
-      'geoOptions' in data &&
-      'osOptions' in data &&
-      'category1Options' in data &&
-      'category2Options' in data &&
-      'category3Options' in data &&
-      'eventTypeOptions' in data &&
-      'pubRevSourceOptions' in data
-    ) {
-      return data as unknown as AdminData;
+    const data = await kv.get('admin_data');
+    if (data) {
+      return data as AdminData;
     }
-    return null;
+    // If no data exists, initialize with default data
+    await kv.set('admin_data', defaultAdminData);
+    return defaultAdminData;
   } catch (error) {
-    console.error('Error fetching admin data from Edge Config:', error);
-    return null;
+    console.error('Error fetching admin data from KV:', error);
+    return defaultAdminData;
   }
 };
 
-// Helper function to update admin data in Edge Config using REST API
+// Helper function to update admin data in KV
 const updateAdminData = async (data: AdminData): Promise<boolean> => {
   try {
-    // Use EDGE_CONFIG_ID directly
-    const edgeConfigId = process.env.EDGE_CONFIG_ID;
-    const token = process.env.EDGE_CONFIG_TOKEN;
-    if (!edgeConfigId || !token) {
-      throw new Error('Missing EDGE_CONFIG_ID or EDGE_CONFIG_TOKEN environment variable.');
-    }
-    const url = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
-    const res = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ items: { admin_data: data } }),
-    });
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`Failed to update Edge Config: ${res.status} ${errorText}`);
-    }
+    await kv.set('admin_data', data);
     return true;
   } catch (error) {
-    console.error('Error updating admin data in Edge Config:', error);
+    console.error('Error updating admin data in KV:', error);
     return false;
   }
 };
 
 export async function GET() {
-  const data = await getAdminData();
-  if (!data) {
+  try {
+    const data = await getAdminData();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error('Error in GET /api/admin:', error);
     return NextResponse.json({ error: 'Failed to read admin data' }, { status: 500 });
   }
-  return NextResponse.json(data);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    // Validate data (basic)
+    
+    // Validate data structure
     if (!data.accountManagers || !Array.isArray(data.accountManagers)) {
       return NextResponse.json({ error: 'Invalid accountManagers data' }, { status: 400 });
     }
-    // ... (other validation as before)
+    
+    if (!data.geoOptions || !Array.isArray(data.geoOptions)) {
+      return NextResponse.json({ error: 'Invalid geoOptions data' }, { status: 400 });
+    }
+    
+    if (!data.osOptions || !Array.isArray(data.osOptions)) {
+      return NextResponse.json({ error: 'Invalid osOptions data' }, { status: 400 });
+    }
+    
+    if (!data.category1Options || !Array.isArray(data.category1Options)) {
+      return NextResponse.json({ error: 'Invalid category1Options data' }, { status: 400 });
+    }
+    
+    if (!data.category2Options || !Array.isArray(data.category2Options)) {
+      return NextResponse.json({ error: 'Invalid category2Options data' }, { status: 400 });
+    }
+    
+    if (!data.category3Options || !Array.isArray(data.category3Options)) {
+      return NextResponse.json({ error: 'Invalid category3Options data' }, { status: 400 });
+    }
+    
+    if (!data.eventTypeOptions || !Array.isArray(data.eventTypeOptions)) {
+      return NextResponse.json({ error: 'Invalid eventTypeOptions data' }, { status: 400 });
+    }
+    
+    if (!data.pubRevSourceOptions || !Array.isArray(data.pubRevSourceOptions)) {
+      return NextResponse.json({ error: 'Invalid pubRevSourceOptions data' }, { status: 400 });
+    }
+
     const success = await updateAdminData(data);
     if (!success) {
       return NextResponse.json({ error: 'Failed to save admin data' }, { status: 500 });
     }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Error in POST /api/admin:', error);
     return NextResponse.json({ error: 'Failed to save admin data' }, { status: 500 });
   }
 }
