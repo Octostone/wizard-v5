@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { put, list, del } from '@vercel/blob';
 
 // Type definitions
 interface AccountManager {
@@ -35,29 +35,63 @@ const defaultAdminData: AdminData = {
   pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
 };
 
-// Helper function to fetch admin data from KV
+// In-memory fallback for local development
+let inMemoryData: AdminData | null = null;
+
+// Helper function to fetch admin data
 const getAdminData = async (): Promise<AdminData> => {
   try {
-    const data = await kv.get('admin_data');
-    if (data) {
-      return data as AdminData;
+    // Check if we're in production (Vercel) with Blob environment
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      try {
+        // List blobs to check if admin-data.json exists
+        const { blobs } = await list();
+        const adminBlob = blobs.find(blob => blob.pathname === 'admin-data.json');
+        
+        if (adminBlob) {
+          // Fetch the blob content
+          const response = await fetch(adminBlob.url);
+          const text = await response.text();
+          return JSON.parse(text);
+        }
+      } catch (error) {
+        console.log('Blob not found, will initialize with default data');
+      }
+      
+      // Initialize with default data in Blob
+      await put('admin-data.json', JSON.stringify(defaultAdminData), {
+        access: 'public',
+      });
+      return defaultAdminData;
+    } else {
+      // Local development fallback
+      if (inMemoryData) {
+        return inMemoryData;
+      }
+      inMemoryData = defaultAdminData;
+      return defaultAdminData;
     }
-    // If no data exists, initialize with default data
-    await kv.set('admin_data', defaultAdminData);
-    return defaultAdminData;
   } catch (error) {
-    console.error('Error fetching admin data from KV:', error);
+    console.error('Error fetching admin data:', error);
     return defaultAdminData;
   }
 };
 
-// Helper function to update admin data in KV
+// Helper function to update admin data
 const updateAdminData = async (data: AdminData): Promise<boolean> => {
   try {
-    await kv.set('admin_data', data);
+    // Check if we're in production (Vercel) with Blob environment
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      await put('admin-data.json', JSON.stringify(data), {
+        access: 'public',
+      });
+    } else {
+      // Local development fallback
+      inMemoryData = data;
+    }
     return true;
   } catch (error) {
-    console.error('Error updating admin data in KV:', error);
+    console.error('Error updating admin data:', error);
     return false;
   }
 };
