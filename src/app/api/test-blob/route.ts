@@ -12,6 +12,8 @@ export async function GET() {
       });
     }
 
+    console.log('Testing Blob connection with allowOverwrite...');
+
     // Test writing to blob
     const testData = {
       message: 'Hello from Vercel Blob!',
@@ -24,8 +26,11 @@ export async function GET() {
       allowOverwrite: true,
     });
 
+    console.log('Successfully wrote test blob:', blob.url);
+
     // Test listing blobs
     const { blobs } = await list();
+    console.log('Found blobs:', blobs.length);
 
     return NextResponse.json({
       status: 'success',
@@ -38,6 +43,10 @@ export async function GET() {
 
   } catch (error) {
     console.error('Blob test error:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     return NextResponse.json({
       status: 'error',
       message: 'Blob test failed',
