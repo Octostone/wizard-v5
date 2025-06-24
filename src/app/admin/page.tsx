@@ -418,8 +418,6 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(false);
   const [error, setError] = useState("");
-  const [showReAuthPrompt, setShowReAuthPrompt] = useState(false);
-  const [reAuthPassword, setReAuthPassword] = useState("");
 
   const [accountManagers, setAccountManagers] = useState<AccountManager[]>([]);
   const [geo, setGeo] = useState<string[]>([]);
@@ -435,45 +433,51 @@ export default function AdminPage() {
   // Fetch initial data from API
   useEffect(() => {
     if (isAuthed) {
-      console.log('Fetching admin data from API...');
-      fetch("/api/admin")
-        .then(res => {
-          console.log('API response status:', res.status);
-          if (res.ok) {
-            setApiStatus('working');
-            return res.json();
-          } else {
-            console.log('API blocked, status:', res.status);
-            setApiStatus('blocked');
-            return null;
-          }
-        })
-        .then(data => {
-          if (data) {
-            console.log('Successfully loaded data from API');
-            // Handle migration from old format
-            if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
-              setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
-            } else {
-              setAccountManagers(data.accountManagers || []);
-            }
-            setGeo(data.geoOptions || []);
-            setOs(data.osOptions || []);
-            setCategory1(data.category1Options || ["Cat", "Dog", "Bird"]);
-            setCategory2(data.category2Options || ["Cat", "Dog", "Bird"]);
-            setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
-            setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
-            setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
-          } else {
-            console.log('Using default data due to API issues');
-          }
-        })
-        .catch(error => {
-          console.log('API error:', error);
-          setApiStatus('blocked');
-        });
+      loadAdminData();
     }
   }, [isAuthed]);
+
+  const loadAdminData = async () => {
+    console.log('🔄 Loading admin data from API...');
+    try {
+      // Add cache-busting parameter to prevent caching
+      const response = await fetch(`/api/admin?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
+      
+      console.log('📡 API response status:', response.status);
+      if (response.ok) {
+        setApiStatus('working');
+        const data = await response.json();
+        console.log('✅ Successfully loaded data from API');
+        console.log('📊 Loaded data:', data);
+        
+        // Handle migration from old format
+        if (data.accountManagers && data.accountManagers.length > 0 && typeof data.accountManagers[0] === 'string') {
+          setAccountManagers(data.accountManagers.map((name: string) => ({ name, email: '' })));
+        } else {
+          setAccountManagers(data.accountManagers || []);
+        }
+        setGeo(data.geoOptions || []);
+        setOs(data.osOptions || []);
+        setCategory1(data.category1Options || ["Cat", "Dog", "Bird"]);
+        setCategory2(data.category2Options || ["Cat", "Dog", "Bird"]);
+        setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
+        setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
+        setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+      } else {
+        console.log('❌ API blocked, status:', response.status);
+        setApiStatus('blocked');
+      }
+    } catch (error) {
+      console.log('❌ API error:', error);
+      setApiStatus('blocked');
+    }
+  };
 
   const handleSave = async () => {
     setSaveStatus('saving');
@@ -490,7 +494,8 @@ export default function AdminPage() {
     };
     
     try {
-      console.log('Attempting to save to server...');
+      console.log('💾 Attempting to save to server...');
+      console.log('📊 Data to save:', saveData);
       
       const res = await fetch("/api/admin", {
         method: "POST",
@@ -499,20 +504,26 @@ export default function AdminPage() {
       });
       
       if (res.ok) {
-        console.log('Successfully saved to server');
+        console.log('✅ Successfully saved to server');
         setSaveStatus('saved');
         setApiStatus('working');
+        
+        // Force reload data after save to ensure we have the latest
+        setTimeout(() => {
+          loadAdminData();
+        }, 1000);
+        
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
-        console.log('Server save failed, status:', res.status);
+        console.log('❌ Server save failed, status:', res.status);
         const errorText = await res.text();
-        console.log('Error response:', errorText);
+        console.log('❌ Error response:', errorText);
         setSaveStatus('error');
         setApiStatus('blocked');
         alert(`Failed to save changes. Status: ${res.status}. This may be due to authentication restrictions.`);
       }
     } catch (error) {
-      console.log('Server save error:', error);
+      console.log('❌ Server save error:', error);
       setSaveStatus('error');
       setApiStatus('blocked');
       alert(`Failed to save changes: ${error instanceof Error ? error.message : 'Unknown error'}. This may be due to authentication restrictions.`);
@@ -527,22 +538,6 @@ export default function AdminPage() {
     } else {
       setError("Incorrect password");
     }
-  };
-
-  const handleReAuthSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (reAuthPassword === ADMIN_PASSWORD) {
-      setShowReAuthPrompt(false);
-      setReAuthPassword("");
-      handleSave();
-    } else {
-      setError("Incorrect password");
-    }
-  };
-
-  const handleSaveWithReAuth = () => {
-    setShowReAuthPrompt(true);
-    setError("");
   };
 
   return (
@@ -575,17 +570,26 @@ export default function AdminPage() {
               {apiStatus === 'unknown' && '⏳ Checking API connection...'}
             </div>
             
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32, gap: 16 }}>
               <button
                 className={saveStatus === 'saved' ? `${styles.saveButton} ${styles.saveButtonSaved}` : 
                          saveStatus === 'error' ? `${styles.saveButton} ${styles.saveButtonError}` : 
                          styles.saveButton}
-                onClick={handleSaveWithReAuth}
+                onClick={handleSave}
                 disabled={saveStatus === 'saving'}
+                style={{ width: 200 }}
               >
                 {saveStatus === 'saved' ? 'Saved!' : 
                  saveStatus === 'saving' ? 'Saving...' : 
                  saveStatus === 'error' ? 'Save Failed' : 'Save Changes'}
+              </button>
+              
+              <button
+                className={styles.actionButton}
+                onClick={loadAdminData}
+                style={{ width: 120, height: 48 }}
+              >
+                Refresh Data
               </button>
             </div>
             
@@ -614,30 +618,6 @@ export default function AdminPage() {
             />
             <button className={styles.actionButton} type="submit">
               Login
-            </button>
-            {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
-          </form>
-        ) : showReAuthPrompt ? (
-          <form className={styles.form} onSubmit={handleReAuthSubmit} style={{ maxWidth: 400, margin: '0 auto' }}>
-            <h3 style={{ textAlign: 'center', marginBottom: 16 }}>Re-authenticate to Save</h3>
-            <input
-              className={styles.input}
-              type="text"
-              placeholder="Enter admin password"
-              value={reAuthPassword}
-              onChange={e => setReAuthPassword(e.target.value)}
-              required
-            />
-            <button className={styles.actionButton} type="submit">
-              Save Changes
-            </button>
-            <button 
-              className={styles.actionButton} 
-              type="button" 
-              onClick={() => setShowReAuthPrompt(false)}
-              style={{ background: '#eee', color: '#333', marginTop: 8 }}
-            >
-              Cancel
             </button>
             {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
           </form>
