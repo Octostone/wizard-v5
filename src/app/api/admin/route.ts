@@ -47,11 +47,11 @@ const getAdminData = async (): Promise<AdminData | null> => {
 // Helper function to update admin data in Edge Config using REST API
 const updateAdminData = async (data: AdminData): Promise<boolean> => {
   try {
-    // Vercel Edge Config REST API endpoint
-    const edgeConfigId = process.env.EDGE_CONFIG?.split('/').pop();
+    // Use EDGE_CONFIG_ID directly
+    const edgeConfigId = process.env.EDGE_CONFIG_ID;
     const token = process.env.EDGE_CONFIG_TOKEN;
     if (!edgeConfigId || !token) {
-      throw new Error('Missing EDGE_CONFIG or EDGE_CONFIG_TOKEN environment variable.');
+      throw new Error('Missing EDGE_CONFIG_ID or EDGE_CONFIG_TOKEN environment variable.');
     }
     const url = `https://api.vercel.com/v1/edge-config/${edgeConfigId}/items`;
     const res = await fetch(url, {
