@@ -61,6 +61,7 @@ const getAdminData = async (): Promise<AdminData> => {
       // Initialize with default data in Blob
       await put('admin-data.json', JSON.stringify(defaultAdminData), {
         access: 'public',
+        allowOverwrite: true,
       });
       return defaultAdminData;
     } else {
@@ -84,6 +85,7 @@ const updateAdminData = async (data: AdminData): Promise<boolean> => {
     if (process.env.BLOB_READ_WRITE_TOKEN) {
       await put('admin-data.json', JSON.stringify(data), {
         access: 'public',
+        allowOverwrite: true,
       });
     } else {
       // Local development fallback

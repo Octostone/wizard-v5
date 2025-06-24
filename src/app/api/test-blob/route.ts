@@ -21,6 +21,7 @@ export async function GET() {
 
     const blob = await put('test-blob.json', JSON.stringify(testData), {
       access: 'public',
+      allowOverwrite: true,
     });
 
     // Test listing blobs
