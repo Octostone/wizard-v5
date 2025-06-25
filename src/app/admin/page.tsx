@@ -223,7 +223,7 @@ function SortableAccountManagerItem({
 }
 
 function CrudManager({ label, items, setItems }: CrudManagerProps) {
-  const [input, setInput] = useState("");
+  const [newItem, setNewItem] = useState("");
   const [editIdx, setEditIdx] = useState<number>(-1);
   const [editValue, setEditValue] = useState("");
 
@@ -240,30 +240,37 @@ function CrudManager({ label, items, setItems }: CrudManagerProps) {
   };
 
   const handleAdd = () => {
-    if (input.trim() && !items.includes(input.trim())) {
-      setItems([...items, input.trim()]);
-      setInput("");
+    if (newItem.trim() && !items.includes(newItem.trim())) {
+      console.log('➕ Adding new item to', label, ':', newItem.trim());
+      setItems(prev => [...prev, newItem.trim()]);
+      setNewItem("");
     }
   };
 
   const handleDelete = (idx: number) => {
-    setItems(items.filter((_, i) => i !== idx));
+    console.log('🗑️ Deleting item from', label, 'at index:', idx);
+    setItems(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleEdit = (idx: number) => {
+    console.log('✏️ Starting edit for', label, 'at index:', idx);
     setEditIdx(idx);
     setEditValue(items[idx]);
   };
 
   const handleEditSave = (idx: number) => {
-    if (editValue.trim() && !items.includes(editValue.trim())) {
-      setItems(items.map((item, i) => (i === idx ? editValue.trim() : item)));
+    if (editValue.trim() && !items.some((item, i) => i !== idx && item === editValue.trim())) {
+      console.log('💾 Saving edit for', label, 'at index:', idx, 'New value:', editValue.trim());
+      setItems(prev => prev.map((item, i) => i === idx ? editValue.trim() : item));
       setEditIdx(-1);
       setEditValue("");
+    } else {
+      console.log('❌ Edit validation failed for', label, '- duplicate value or empty value');
     }
   };
 
   const handleEditCancel = () => {
+    console.log('❌ Canceling edit for', label);
     setEditIdx(-1);
     setEditValue("");
   };
@@ -275,9 +282,9 @@ function CrudManager({ label, items, setItems }: CrudManagerProps) {
         <input
           className={styles.input}
           type="text"
-          placeholder={`Add new ${label}`}
-          value={input}
-          onChange={e => setInput(e.target.value)}
+          placeholder={`Add ${label}`}
+          value={newItem}
+          onChange={e => setNewItem(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
         />
         <button className={styles.actionButton} type="button" onClick={handleAdd}>
@@ -330,17 +337,21 @@ function AccountManagerManager({ accountManagers, setAccountManagers }: AccountM
 
   const handleAdd = () => {
     if (newName.trim() && !accountManagers.some(manager => manager.name === newName.trim())) {
-      setAccountManagers([...accountManagers, { name: newName.trim(), email: newEmail.trim() }]);
+      const newManager = { name: newName.trim(), email: newEmail.trim() };
+      console.log('➕ Adding new account manager:', newManager);
+      setAccountManagers(prev => [...prev, newManager]);
       setNewName("");
       setNewEmail("");
     }
   };
 
   const handleDelete = (idx: number) => {
-    setAccountManagers(accountManagers.filter((_, i) => i !== idx));
+    console.log('🗑️ Deleting account manager at index:', idx);
+    setAccountManagers(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleEdit = (idx: number) => {
+    console.log('✏️ Starting edit for account manager at index:', idx);
     setEditIdx(idx);
     setEditName(accountManagers[idx].name);
     setEditEmail(accountManagers[idx].email);
@@ -348,16 +359,23 @@ function AccountManagerManager({ accountManagers, setAccountManagers }: AccountM
 
   const handleEditSave = (idx: number, name: string, email: string) => {
     if (name.trim() && !accountManagers.some((manager, i) => i !== idx && manager.name === name.trim())) {
-      setAccountManagers(accountManagers.map((manager, i) => 
-        i === idx ? { name: name.trim(), email: email.trim() } : manager
+      const updatedManager = { name: name.trim(), email: email.trim() };
+      console.log('💾 Saving edit for account manager at index:', idx, 'New data:', updatedManager);
+      
+      setAccountManagers(prev => prev.map((manager, i) => 
+        i === idx ? updatedManager : manager
       ));
+      
       setEditIdx(-1);
       setEditName("");
       setEditEmail("");
+    } else {
+      console.log('❌ Edit validation failed - duplicate name or empty name');
     }
   };
 
   const handleEditCancel = () => {
+    console.log('❌ Canceling edit');
     setEditIdx(-1);
     setEditName("");
     setEditEmail("");
@@ -429,6 +447,7 @@ export default function AdminPage() {
   const [pubRevSources, setPubRevSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving' | 'error'>('idle');
   const [apiStatus, setApiStatus] = useState<'unknown' | 'working' | 'blocked'>('unknown');
+  const [lastSavedData, setLastSavedData] = useState<string>(''); // Track last saved data to prevent overwrites
 
   // Fetch initial data from API
   useEffect(() => {
@@ -482,7 +501,8 @@ export default function AdminPage() {
   const handleSave = async () => {
     setSaveStatus('saving');
     
-    const saveData = { 
+    // Create a snapshot of current state to ensure we save the latest data
+    const currentData = { 
       accountManagers, 
       geoOptions: geo, 
       osOptions: os,
@@ -493,26 +513,34 @@ export default function AdminPage() {
       pubRevSourceOptions: pubRevSources
     };
     
+    const dataString = JSON.stringify(currentData);
+    
+    // Check if this data is the same as what we last saved to prevent unnecessary saves
+    if (dataString === lastSavedData) {
+      console.log('🔄 Data unchanged, skipping save');
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+      return;
+    }
+    
     try {
       console.log('💾 Attempting to save to server...');
-      console.log('📊 Data to save:', saveData);
+      console.log('📊 Data to save:', currentData);
       
       const res = await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(saveData)
+        body: dataString
       });
       
       if (res.ok) {
         console.log('✅ Successfully saved to server');
         setSaveStatus('saved');
         setApiStatus('working');
+        setLastSavedData(dataString); // Update last saved data
         
-        // Force reload data after save to ensure we have the latest
-        setTimeout(() => {
-          loadAdminData();
-        }, 1000);
-        
+        // Don't auto-refresh immediately - let the user see their changes
+        // Only refresh if there's a significant delay or user action
         setTimeout(() => setSaveStatus('idle'), 2000);
       } else {
         console.log('❌ Server save failed, status:', res.status);
