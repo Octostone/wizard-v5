@@ -80,7 +80,9 @@ export default function Finish() {
         }, 2000);
       } else {
         setSubmitStatus('error');
-        setErrorMessage(data.error || 'Failed to create Google Sheet. Please try again.');
+        const errorMsg = data.error || data.details || 'Failed to create Google Sheet. Please try again.';
+        console.error('Google Sheets API Error:', data);
+        setErrorMessage(errorMsg);
       }
     } catch (error) {
       console.error('Error submitting form:', error);

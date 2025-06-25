@@ -8,14 +8,20 @@ function formatPrivateKey(key: string | undefined): string | undefined {
 }
 
 // Template sheet ID - this should be stored in environment variables
-const TEMPLATE_SHEET_ID = process.env.GOOGLE_TEMPLATE_SHEET_ID;
+const TEMPLATE_SHEET_ID = process.env.TEMPLATE_SHEET_ID || process.env.GOOGLE_TEMPLATE_SHEET_ID;
 
 export async function POST(request: Request) {
   try {
     // --- Environment Variable and Request Body Validation ---
+    console.log('🔍 Environment variables check:');
+    console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
+    console.log('GOOGLE_TEMPLATE_SHEET_ID:', process.env.GOOGLE_TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
+    console.log('Final TEMPLATE_SHEET_ID value:', TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
+    
     if (!TEMPLATE_SHEET_ID) {
-      console.error('CRITICAL: GOOGLE_TEMPLATE_SHEET_ID environment variable is not set.');
-      throw new Error('GOOGLE_TEMPLATE_SHEET_ID environment variable is not set');
+      console.error('CRITICAL: TEMPLATE_SHEET_ID environment variable is not set.');
+      console.error('Available environment variables:', Object.keys(process.env).filter(key => key.includes('SHEET') || key.includes('GOOGLE')));
+      throw new Error('TEMPLATE_SHEET_ID environment variable is not set');
     }
 
     const body = await request.json();
@@ -227,7 +233,10 @@ export async function POST(request: Request) {
 
     // --- Success Response ---
     return NextResponse.json({
+      success: true,
       message: 'Sheet created and updated successfully!',
+      fileId: newSheetId,
+      fileUrl: copiedFile.data.webViewLink,
       spreadsheetId: newSheetId,
       spreadsheetUrl: copiedFile.data.webViewLink,
     });
