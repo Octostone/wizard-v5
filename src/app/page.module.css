@@ -728,4 +728,131 @@ select.floatingInput:not([value=""]) + .floatingLabel {
   grid-template-columns: 1fr;
   gap: 24px;
   width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.adminPasswordContainer {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.adminPasswordGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.adminPasswordCard {
+  background: #ffe6e6; /* Pale red background */
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+  padding: 24px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 220px;
+  color: #000000; /* Black text */
+}
+
+.adminPasswordCard h3 {
+  color: #000000;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.adminPasswordCard label {
+  color: #000000;
+  font-weight: bold;
+}
+
+.adminPasswordCard span {
+  color: #000000;
+}
+
+.adminPasswordCard div {
+  color: #000000;
+}
+
+.adminPasswordSeparator {
+  height: 3px;
+  background: #000000;
+  margin: 40px 0;
+  width: 100%;
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: white;
+  padding: 32px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: #d32f2f;
+}
+
+.modalMessage {
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.modalButtons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.modalButton {
+  padding: 12px 24px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.modalButtonConfirm {
+  background: #d32f2f;
+  color: white;
+}
+
+.modalButtonConfirm:hover {
+  background: #b71c1c;
+}
+
+.modalButtonCancel {
+  background: #6c757d;
+  color: white;
+}
+
+.modalButtonCancel:hover {
+  background: #545b62;
 }

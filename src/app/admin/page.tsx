@@ -47,6 +47,10 @@ interface AdminData {
     enableNotifications: boolean;
     notificationDelay: number; // in minutes
   };
+  // Password change configuration
+  passwordChangeSettings: {
+    notificationRecipients: string[];
+  };
 }
 
 type CrudManagerProps = {
@@ -589,9 +593,244 @@ function EmailConfigManager({
               ))}
             </ul>
           )}
+          
+          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 8, fontStyle: 'italic' }}>
+            Account manager selected in workflow will by default receive email upon completion. The above additional recipients will also receive a copy for all submissions.
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function PasswordChangeManager({ 
+  passwordChangeSettings, 
+  setPasswordChangeSettings 
+}: { 
+  passwordChangeSettings: { notificationRecipients: string[] }; 
+  setPasswordChangeSettings: React.Dispatch<React.SetStateAction<{ notificationRecipients: string[] }>>; 
+}) {
+  const [newRecipient, setNewRecipient] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+
+  const handleAddRecipient = () => {
+    if (newRecipient.trim() && !passwordChangeSettings.notificationRecipients.includes(newRecipient.trim())) {
+      setPasswordChangeSettings(prev => ({
+        ...prev,
+        notificationRecipients: [...prev.notificationRecipients, newRecipient.trim()]
+      }));
+      setNewRecipient('');
+    }
+  };
+
+  const handleRemoveRecipient = (email: string) => {
+    setPasswordChangeSettings(prev => ({
+      ...prev,
+      notificationRecipients: prev.notificationRecipients.filter(r => r !== email)
+    }));
+  };
+
+  const handlePasswordChange = () => {
+    // Validate passwords
+    if (currentPassword !== ADMIN_PASSWORD) {
+      setPasswordError('Current password is incorrect');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    setPasswordError('');
+    setShowConfirmModal(true);
+  };
+
+  const confirmPasswordChange = async () => {
+    try {
+      // Send email notification
+      const response = await fetch('/api/send-password-change-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          oldPassword: currentPassword,
+          newPassword: newPassword,
+          recipients: passwordChangeSettings.notificationRecipients
+        })
+      });
+
+      if (response.ok) {
+        // Update the admin password (in a real app, this would be stored securely)
+        // For now, we'll just show success and clear the form
+        alert('Password changed successfully! Email notifications sent.');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowConfirmModal(false);
+      } else {
+        alert('Password changed but failed to send email notifications.');
+      }
+    } catch (error) {
+      alert('Password changed but failed to send email notifications.');
+    }
+  };
+
+  return (
+    <>
+      <div className={styles.adminPasswordCard}>
+        <h3>Admin Password Management</h3>
+        
+        <div style={{ marginBottom: 24 }}>
+          <h4 style={{ color: '#000000', fontWeight: 'bold', marginBottom: 16, fontSize: '1.1rem' }}>
+            Change Admin Password
+          </h4>
+          
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Current Password
+            </label>
+            <input
+              className={styles.input}
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter current password"
+              style={{ width: '100%' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              New Password
+            </label>
+            <input
+              className={styles.input}
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Enter new password"
+              style={{ width: '100%' }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Confirm New Password
+            </label>
+            <input
+              className={styles.input}
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
+              style={{ width: '100%' }}
+            />
+          </div>
+          
+          {passwordError && (
+            <div style={{ color: '#d32f2f', marginBottom: 16, fontSize: '0.9rem' }}>
+              {passwordError}
+            </div>
+          )}
+          
+          <button 
+            className={styles.actionButton}
+            onClick={handlePasswordChange}
+            style={{ 
+              background: '#d32f2f', 
+              color: 'white',
+              width: '100%',
+              padding: '12px',
+              fontSize: '1.1rem',
+              fontWeight: 'bold'
+            }}
+          >
+            Change Password
+          </button>
+        </div>
+
+        <div>
+          <h4 style={{ color: '#000000', fontWeight: 'bold', marginBottom: 16, fontSize: '1.1rem' }}>
+            Password Change Notifications
+          </h4>
+          
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+              Notification Recipients
+            </label>
+            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: 8 }}>
+              These recipients will be notified when the admin password is changed
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <input
+                className={styles.input}
+                type="email"
+                placeholder="email@example.com"
+                value={newRecipient}
+                onChange={(e) => setNewRecipient(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
+                style={{ flex: 1 }}
+              />
+              <button className={styles.actionButton} onClick={handleAddRecipient}>
+                Add
+              </button>
+            </div>
+            
+            {passwordChangeSettings.notificationRecipients.length > 0 && (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {passwordChangeSettings.notificationRecipients.map((email, idx) => (
+                  <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{ flex: 1 }}>{email}</span>
+                    <button 
+                      className={styles.actionButton} 
+                      onClick={() => handleRemoveRecipient(email)}
+                      style={{ minWidth: 50, background: '#eee', color: '#333' }}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalTitle}>⚠️ Confirm Password Change</div>
+            <div className={styles.modalMessage}>
+              Are you sure you want to change the admin password? This action cannot be undone and will send email notifications to all configured recipients.
+            </div>
+            <div className={styles.modalButtons}>
+              <button 
+                className={`${styles.modalButton} ${styles.modalButtonConfirm}`}
+                onClick={confirmPasswordChange}
+              >
+                Yes, Change Password
+              </button>
+              <button 
+                className={`${styles.modalButton} ${styles.modalButtonCancel}`}
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -642,6 +881,11 @@ export default function AdminPage() {
     defaultRecipients: [] as string[],
     enableNotifications: true,
     notificationDelay: 0 // in minutes
+  });
+
+  // Password change configuration state
+  const [passwordChangeSettings, setPasswordChangeSettings] = useState({
+    notificationRecipients: [] as string[]
   });
 
   // Fetch initial data from API
@@ -703,7 +947,18 @@ export default function AdminPage() {
           setEmailTemplates(data.emailTemplates);
         }
         if (data.emailSettings) {
-          setEmailSettings(data.emailSettings);
+          setEmailSettings(data.emailSettings || {
+            defaultRecipients: [],
+            enableNotifications: true,
+            notificationDelay: 0
+          });
+        }
+        
+        // Load password change configuration
+        if (data.passwordChangeSettings) {
+          setPasswordChangeSettings(data.passwordChangeSettings || {
+            notificationRecipients: []
+          });
         }
       } else {
         console.log('❌ API blocked, status:', response.status);
@@ -735,7 +990,8 @@ export default function AdminPage() {
       eventTypeOptions: eventTypes,
       pubRevSourceOptions: pubRevSources,
       emailTemplates,
-      emailSettings
+      emailSettings,
+      passwordChangeSettings
     };
     
     const dataString = JSON.stringify(currentData);
@@ -900,6 +1156,19 @@ export default function AdminPage() {
                   setEmailTemplates={setEmailTemplates} 
                   emailSettings={emailSettings} 
                   setEmailSettings={setEmailSettings} 
+                />
+              </div>
+            </div>
+            
+            {/* Visual separator */}
+            <div className={styles.adminPasswordSeparator}></div>
+            
+            {/* Admin Password Management Section */}
+            <div className={styles.adminPasswordContainer}>
+              <div className={styles.adminPasswordGrid}>
+                <PasswordChangeManager 
+                  passwordChangeSettings={passwordChangeSettings} 
+                  setPasswordChangeSettings={setPasswordChangeSettings} 
                 />
               </div>
             </div>

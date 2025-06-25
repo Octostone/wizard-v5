@@ -27,6 +27,9 @@ interface AdminData {
     enableNotifications: boolean;
     notificationDelay: number;
   };
+  passwordChangeSettings: {
+    notificationRecipients: string[];
+  };
 }
 
 // Default data structure
@@ -72,6 +75,9 @@ const defaultAdminData: AdminData = {
     defaultRecipients: [],
     enableNotifications: true,
     notificationDelay: 0
+  },
+  passwordChangeSettings: {
+    notificationRecipients: []
   }
 };
 
@@ -169,7 +175,7 @@ const updateAdminData = async (data: AdminData): Promise<boolean> => {
       console.log('✅ Successfully updated admin data in Blob:', result.url);
       
       // Verify the write by immediately reading back
-      console.log('🔍 Verifying write by reading back data...');
+      console.log('�� Verifying write by reading back data...');
       try {
         const { blobs } = await list();
         const adminBlob = blobs.find(blob => blob.pathname === 'admin-data.json');
