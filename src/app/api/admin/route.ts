@@ -30,6 +30,7 @@ interface AdminData {
   passwordChangeSettings: {
     notificationRecipients: string[];
   };
+  adminPassword: string;
 }
 
 // Default data structure
@@ -78,7 +79,8 @@ const defaultAdminData: AdminData = {
   },
   passwordChangeSettings: {
     notificationRecipients: []
-  }
+  },
+  adminPassword: 'admin123'
 };
 
 // In-memory fallback for local development

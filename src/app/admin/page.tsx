@@ -18,8 +18,6 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 
-const ADMIN_PASSWORD = "admin123";
-
 // Types for account managers
 interface AccountManager {
   name: string;
@@ -51,6 +49,8 @@ interface AdminData {
   passwordChangeSettings: {
     notificationRecipients: string[];
   };
+  // Admin authentication
+  adminPassword: string;
 }
 
 type CrudManagerProps = {
@@ -605,10 +605,14 @@ function EmailConfigManager({
 
 function PasswordChangeManager({ 
   passwordChangeSettings, 
-  setPasswordChangeSettings 
+  setPasswordChangeSettings,
+  adminPassword,
+  setAdminPassword
 }: { 
   passwordChangeSettings: { notificationRecipients: string[] }; 
   setPasswordChangeSettings: React.Dispatch<React.SetStateAction<{ notificationRecipients: string[] }>>; 
+  adminPassword: string;
+  setAdminPassword: React.Dispatch<React.SetStateAction<string>>;
 }) {
   const [newRecipient, setNewRecipient] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -636,7 +640,7 @@ function PasswordChangeManager({
 
   const handlePasswordChange = () => {
     // Validate passwords
-    if (currentPassword !== ADMIN_PASSWORD) {
+    if (currentPassword !== adminPassword) {
       setPasswordError('Current password is incorrect');
       return;
     }
@@ -669,9 +673,13 @@ function PasswordChangeManager({
       });
 
       if (response.ok) {
-        // Update the admin password (in a real app, this would be stored securely)
-        // For now, we'll just show success and clear the form
-        alert('Password changed successfully! Email notifications sent.');
+        // Update the stored admin password
+        setAdminPassword(newPassword);
+        
+        // Show success message
+        alert('Password changed successfully! Email notifications sent. Please click "Save Changes" to persist the new password.');
+        
+        // Clear the form
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
@@ -888,6 +896,9 @@ export default function AdminPage() {
     notificationRecipients: [] as string[]
   });
 
+  // Admin password state
+  const [adminPassword, setAdminPassword] = useState('admin123'); // Default password
+
   // Fetch initial data from API
   useEffect(() => {
     if (isAuthed) {
@@ -960,6 +971,11 @@ export default function AdminPage() {
             notificationRecipients: []
           });
         }
+        
+        // Load admin password
+        if (data.adminPassword) {
+          setAdminPassword(data.adminPassword);
+        }
       } else {
         console.log('❌ API blocked, status:', response.status);
         setApiStatus('blocked');
@@ -991,7 +1007,8 @@ export default function AdminPage() {
       pubRevSourceOptions: pubRevSources,
       emailTemplates,
       emailSettings,
-      passwordChangeSettings
+      passwordChangeSettings,
+      adminPassword
     };
     
     const dataString = JSON.stringify(currentData);
@@ -1041,7 +1058,7 @@ export default function AdminPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    if (password === adminPassword) {
       setIsAuthed(true);
       setError("");
     } else {
@@ -1169,6 +1186,8 @@ export default function AdminPage() {
                 <PasswordChangeManager 
                   passwordChangeSettings={passwordChangeSettings} 
                   setPasswordChangeSettings={setPasswordChangeSettings} 
+                  adminPassword={adminPassword}
+                  setAdminPassword={setAdminPassword}
                 />
               </div>
             </div>
