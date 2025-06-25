@@ -312,17 +312,18 @@ select.floatingInput:not([value=""]) + .floatingLabel {
 
 .adminGrid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 32px 32px;
-  justify-content: center;
-  max-width: 80vw;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
+  padding-bottom: 50px;
 }
 
 @media (max-width: 900px) {
   .adminGrid {
     grid-template-columns: 1fr;
-    gap: 32px;
+    gap: 16px;
   }
 }
 
@@ -704,3 +705,27 @@ select.floatingInput:not([value=""]) + .floatingLabel {
 
 /* input[type="password"] { ... } */
 /* input[type="text"] { ... } */
+
+/* Email configuration separator */
+.emailConfigSeparator {
+  width: 60%;
+  height: 3px;
+  background: #000000;
+  margin: 40px auto;
+  border-radius: 2px;
+}
+
+/* Email configuration container */
+.emailConfigContainer {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding-bottom: 50px;
+}
+
+.emailConfigGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  width: 100%;
+}

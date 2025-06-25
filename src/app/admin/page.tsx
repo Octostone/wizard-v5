@@ -444,58 +444,15 @@ function AccountManagerManager({ accountManagers, setAccountManagers }: AccountM
   );
 }
 
-// Email Template Manager Component
-function EmailTemplateManager({ 
+// Email Configuration Manager Component (Combined)
+function EmailConfigManager({ 
   emailTemplates, 
-  setEmailTemplates 
-}: { 
-  emailTemplates: EmailTemplate; 
-  setEmailTemplates: React.Dispatch<React.SetStateAction<EmailTemplate>>; 
-}) {
-  return (
-    <div className={styles.adminCard}>
-      <h3>Email Templates</h3>
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
-          Email Subject Template
-        </label>
-        <input
-          className={styles.input}
-          type="text"
-          value={emailTemplates.subject}
-          onChange={(e) => setEmailTemplates(prev => ({ ...prev, subject: e.target.value }))}
-          placeholder="Email subject template"
-          style={{ width: '100%' }}
-        />
-        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
-          Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}
-        </div>
-      </div>
-      
-      <div>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
-          Email Body Template
-        </label>
-        <textarea
-          className={styles.input}
-          value={emailTemplates.body}
-          onChange={(e) => setEmailTemplates(prev => ({ ...prev, body: e.target.value }))}
-          placeholder="Email body template (HTML supported)"
-          style={{ width: '100%', minHeight: 200, resize: 'vertical' }}
-        />
-        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
-          Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}, {'{googleSheetUrl}'}, {'{googleFolderUrl}'}, {'{formSummary}'}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Email Settings Manager Component
-function EmailSettingsManager({ 
+  setEmailTemplates,
   emailSettings, 
   setEmailSettings 
 }: { 
+  emailTemplates: EmailTemplate; 
+  setEmailTemplates: React.Dispatch<React.SetStateAction<EmailTemplate>>; 
   emailSettings: { defaultRecipients: string[]; enableNotifications: boolean; notificationDelay: number }; 
   setEmailSettings: React.Dispatch<React.SetStateAction<{ defaultRecipients: string[]; enableNotifications: boolean; notificationDelay: number }>>; 
 }) {
@@ -520,72 +477,119 @@ function EmailSettingsManager({
 
   return (
     <div className={styles.adminCard}>
-      <h3>Email Settings</h3>
+      <h3>Email Configuration</h3>
       
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <input
-            type="checkbox"
-            checked={emailSettings.enableNotifications}
-            onChange={(e) => setEmailSettings(prev => ({ ...prev, enableNotifications: e.target.checked }))}
-          />
-          <span style={{ fontWeight: 'bold' }}>Enable Email Notifications</span>
-        </label>
-      </div>
-
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
-          Notification Delay (minutes)
-        </label>
-        <input
-          className={styles.input}
-          type="number"
-          min="0"
-          max="60"
-          value={emailSettings.notificationDelay}
-          onChange={(e) => setEmailSettings(prev => ({ ...prev, notificationDelay: parseInt(e.target.value) || 0 }))}
-          style={{ width: '100px' }}
-        />
-        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
-          Delay before sending notification (0 = immediate)
-        </div>
-      </div>
-
-      <div>
-        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
-          Default Additional Recipients
-        </label>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+      {/* Email Templates Section */}
+      <div style={{ marginBottom: 32 }}>
+        <h4 style={{ color: '#000000', fontWeight: 'bold', marginBottom: 16, fontSize: '1.1rem' }}>
+          Email Templates
+        </h4>
+        
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            Email Subject Template
+          </label>
           <input
             className={styles.input}
-            type="email"
-            placeholder="email@example.com"
-            value={newRecipient}
-            onChange={(e) => setNewRecipient(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
-            style={{ flex: 1 }}
+            type="text"
+            value={emailTemplates.subject}
+            onChange={(e) => setEmailTemplates(prev => ({ ...prev, subject: e.target.value }))}
+            placeholder="Email subject template"
+            style={{ width: '100%' }}
           />
-          <button className={styles.actionButton} onClick={handleAddRecipient}>
-            Add
-          </button>
+          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+            Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}
+          </div>
         </div>
         
-        {emailSettings.defaultRecipients.length > 0 && (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {emailSettings.defaultRecipients.map((email, idx) => (
-              <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <span style={{ flex: 1 }}>{email}</span>
-                <button 
-                  className={styles.actionButton} 
-                  onClick={() => handleRemoveRecipient(email)}
-                  style={{ minWidth: 50, background: '#eee', color: '#333' }}
-                >
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            Email Body Template
+          </label>
+          <textarea
+            className={styles.input}
+            value={emailTemplates.body}
+            onChange={(e) => setEmailTemplates(prev => ({ ...prev, body: e.target.value }))}
+            placeholder="Email body template (HTML supported)"
+            style={{ width: '100%', minHeight: 200, resize: 'vertical' }}
+          />
+          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+            Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}, {'{googleSheetUrl}'}, {'{googleFolderUrl}'}, {'{formSummary}'}
+          </div>
+        </div>
+      </div>
+
+      {/* Email Settings Section */}
+      <div>
+        <h4 style={{ color: '#000000', fontWeight: 'bold', marginBottom: 16, fontSize: '1.1rem' }}>
+          Email Settings
+        </h4>
+        
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <input
+              type="checkbox"
+              checked={emailSettings.enableNotifications}
+              onChange={(e) => setEmailSettings(prev => ({ ...prev, enableNotifications: e.target.checked }))}
+            />
+            <span style={{ fontWeight: 'bold' }}>Enable Email Notifications</span>
+          </label>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            Notification Delay (minutes)
+          </label>
+          <input
+            className={styles.input}
+            type="number"
+            min="0"
+            max="60"
+            value={emailSettings.notificationDelay}
+            onChange={(e) => setEmailSettings(prev => ({ ...prev, notificationDelay: parseInt(e.target.value) || 0 }))}
+            style={{ width: '100px' }}
+          />
+          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+            Delay before sending notification (0 = immediate)
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+            Default Additional Recipients
+          </label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input
+              className={styles.input}
+              type="email"
+              placeholder="email@example.com"
+              value={newRecipient}
+              onChange={(e) => setNewRecipient(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
+              style={{ flex: 1 }}
+            />
+            <button className={styles.actionButton} onClick={handleAddRecipient}>
+              Add
+            </button>
+          </div>
+          
+          {emailSettings.defaultRecipients.length > 0 && (
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {emailSettings.defaultRecipients.map((email, idx) => (
+                <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span style={{ flex: 1 }}>{email}</span>
+                  <button 
+                    className={styles.actionButton} 
+                    onClick={() => handleRemoveRecipient(email)}
+                    style={{ minWidth: 50, background: '#eee', color: '#333' }}
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -873,18 +877,33 @@ export default function AdminPage() {
             {error && <div style={{ color: 'red', marginTop: 8 }}>{error}</div>}
           </form>
         ) : (
-          <div className={styles.adminGrid}>
-            <AccountManagerManager accountManagers={accountManagers} setAccountManagers={setAccountManagers} />
-            <CrudManager label="Geo" items={geo} setItems={setGeo} />
-            <CrudManager label="OS" items={os} setItems={setOs} />
-            <CrudManager label="Category 1" items={category1} setItems={setCategory1} />
-            <CrudManager label="Category 2" items={category2} setItems={setCategory2} />
-            <CrudManager label="Category 3" items={category3} setItems={setCategory3} />
-            <CrudManager label="Event Types" items={eventTypes} setItems={setEventTypes} />
-            <CrudManager label="Pub Rev Sources" items={pubRevSources} setItems={setPubRevSources} />
-            <EmailTemplateManager emailTemplates={emailTemplates} setEmailTemplates={setEmailTemplates} />
-            <EmailSettingsManager emailSettings={emailSettings} setEmailSettings={setEmailSettings} />
-          </div>
+          <>
+            <div className={styles.adminGrid}>
+              <AccountManagerManager accountManagers={accountManagers} setAccountManagers={setAccountManagers} />
+              <CrudManager label="Geo" items={geo} setItems={setGeo} />
+              <CrudManager label="OS" items={os} setItems={setOs} />
+              <CrudManager label="Category 1" items={category1} setItems={setCategory1} />
+              <CrudManager label="Category 2" items={category2} setItems={setCategory2} />
+              <CrudManager label="Category 3" items={category3} setItems={setCategory3} />
+              <CrudManager label="Event Types" items={eventTypes} setItems={setEventTypes} />
+              <CrudManager label="Pub Rev Sources" items={pubRevSources} setItems={setPubRevSources} />
+            </div>
+            
+            {/* Visual separator */}
+            <div className={styles.emailConfigSeparator}></div>
+            
+            {/* Email Configuration Section */}
+            <div className={styles.emailConfigContainer}>
+              <div className={styles.emailConfigGrid}>
+                <EmailConfigManager 
+                  emailTemplates={emailTemplates} 
+                  setEmailTemplates={setEmailTemplates} 
+                  emailSettings={emailSettings} 
+                  setEmailSettings={setEmailSettings} 
+                />
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
