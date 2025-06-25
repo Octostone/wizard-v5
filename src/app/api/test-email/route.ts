@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'Flourish Wizard <noreply@yourdomain.com>', // You'll update this
+      from: 'Flourish Wizard <onboarding@resend.dev>',
       to: [testEmail],
       subject: 'Test Email - Flourish Wizard System',
       html: `

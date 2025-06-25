@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       .replace('{formSummary}', data.formSummary);
 
     const { data: emailData, error } = await resend.emails.send({
-      from: 'Flourish Wizard <noreply@yourdomain.com>', // You'll update this with your domain
+      from: 'Flourish Wizard <onboarding@resend.dev>',
       to: allRecipients,
       subject: processedSubject,
       html: processedBody,
