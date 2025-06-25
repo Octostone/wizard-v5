@@ -448,11 +448,22 @@ export default function AdminPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved' | 'saving' | 'error'>('idle');
   const [apiStatus, setApiStatus] = useState<'unknown' | 'working' | 'blocked'>('unknown');
   const [lastSavedData, setLastSavedData] = useState<string>(''); // Track last saved data to prevent overwrites
+  const [showApiStatus, setShowApiStatus] = useState(false); // Control API status visibility
 
   // Fetch initial data from API
   useEffect(() => {
     if (isAuthed) {
       loadAdminData();
+    }
+  }, [isAuthed]);
+
+  // Auto-focus password field when not authenticated
+  useEffect(() => {
+    if (!isAuthed) {
+      const passwordInput = document.querySelector('input[type="text"][placeholder="Enter admin password"]') as HTMLInputElement;
+      if (passwordInput) {
+        passwordInput.focus();
+      }
     }
   }, [isAuthed]);
 
@@ -471,6 +482,10 @@ export default function AdminPage() {
       console.log('📡 API response status:', response.status);
       if (response.ok) {
         setApiStatus('working');
+        setShowApiStatus(true);
+        // Hide API status after 5 seconds
+        setTimeout(() => setShowApiStatus(false), 5000);
+        
         const data = await response.json();
         console.log('✅ Successfully loaded data from API');
         console.log('📊 Loaded data:', data);
@@ -491,10 +506,16 @@ export default function AdminPage() {
       } else {
         console.log('❌ API blocked, status:', response.status);
         setApiStatus('blocked');
+        setShowApiStatus(true);
+        // Hide API status after 5 seconds
+        setTimeout(() => setShowApiStatus(false), 5000);
       }
     } catch (error) {
       console.log('❌ API error:', error);
       setApiStatus('blocked');
+      setShowApiStatus(true);
+      // Hide API status after 5 seconds
+      setTimeout(() => setShowApiStatus(false), 5000);
     }
   };
 
@@ -519,7 +540,7 @@ export default function AdminPage() {
     if (dataString === lastSavedData) {
       console.log('🔄 Data unchanged, skipping save');
       setSaveStatus('saved');
-      setTimeout(() => setSaveStatus('idle'), 2000);
+      setTimeout(() => setSaveStatus('idle'), 4000); // Changed to 4 seconds
       return;
     }
     
@@ -541,7 +562,7 @@ export default function AdminPage() {
         
         // Don't auto-refresh immediately - let the user see their changes
         // Only refresh if there's a significant delay or user action
-        setTimeout(() => setSaveStatus('idle'), 2000);
+        setTimeout(() => setSaveStatus('idle'), 4000); // Changed to 4 seconds
       } else {
         console.log('❌ Server save failed, status:', res.status);
         const errorText = await res.text();
@@ -582,21 +603,23 @@ export default function AdminPage() {
               </Link>
             </div>
             
-            {/* API Status Indicator */}
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              marginBottom: 16,
-              padding: '8px 16px',
-              borderRadius: '4px',
-              backgroundColor: apiStatus === 'working' ? '#d4edda' : apiStatus === 'blocked' ? '#f8d7da' : '#fff3cd',
-              color: apiStatus === 'working' ? '#155724' : apiStatus === 'blocked' ? '#721c24' : '#856404',
-              border: `1px solid ${apiStatus === 'working' ? '#c3e6cb' : apiStatus === 'blocked' ? '#f5c6cb' : '#ffeaa7'}`
-            }}>
-              {apiStatus === 'working' && '✓ API Connection Working'}
-              {apiStatus === 'blocked' && '⚠ API Blocked - Changes may not persist'}
-              {apiStatus === 'unknown' && '⏳ Checking API connection...'}
-            </div>
+            {/* API Status Indicator - only show for 5 seconds */}
+            {showApiStatus && (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                marginBottom: 16,
+                padding: '8px 16px',
+                borderRadius: '4px',
+                backgroundColor: apiStatus === 'working' ? '#d4edda' : apiStatus === 'blocked' ? '#f8d7da' : '#fff3cd',
+                color: apiStatus === 'working' ? '#155724' : apiStatus === 'blocked' ? '#721c24' : '#856404',
+                border: `1px solid ${apiStatus === 'working' ? '#c3e6cb' : apiStatus === 'blocked' ? '#f5c6cb' : '#ffeaa7'}`
+              }}>
+                {apiStatus === 'working' && '✓ API Connection Working'}
+                {apiStatus === 'blocked' && '⚠ API Blocked - Changes may not persist'}
+                {apiStatus === 'unknown' && '⏳ Checking API connection...'}
+              </div>
+            )}
             
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32, gap: 16 }}>
               <button
