@@ -17,7 +17,7 @@ export default function Finish() {
 
   // Handle countdown and redirect after success
   useEffect(() => {
-    if (submitStatus === 'processing') {
+    if (submitStatus === 'success') {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
@@ -73,11 +73,7 @@ export default function Finish() {
           fileId: data.fileId,
           fileUrl: data.fileUrl
         });
-        // Start the processing state after a brief moment to show success
-        setTimeout(() => {
-          setSubmitStatus('processing');
-          setCountdown(5);
-        }, 2000);
+        setCountdown(5);
       } else {
         setSubmitStatus('error');
         const errorMsg = data.error || data.details || 'Failed to create Google Sheet. Please try again.';
@@ -102,8 +98,8 @@ export default function Finish() {
     router.back();
   };
 
-  // Processing/Placeholder page
-  if (submitStatus === 'processing') {
+  // Processing/Please wait page
+  if (isSubmitting) {
     return (
       <div className={styles.page}>
         <div className={styles.centeredCard}>
@@ -117,10 +113,86 @@ export default function Finish() {
               animation: 'spin 1s linear infinite',
               margin: '0 auto 24px'
             }}></div>
+            <h1 style={{ marginBottom: '16px', color: '#333' }}>Creating Your Google Sheet</h1>
+            <p style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>
+              Please wait while we create your Google Sheet and populate it with your data...
+            </p>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: '#e7f3ff', 
+              borderRadius: '8px', 
+              marginBottom: '24px' 
+            }}>
+              <p style={{ margin: '0', fontSize: '16px', color: '#0056b3' }}>
+                This may take a few moments
+              </p>
+            </div>
+          </div>
+        </div>
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  // Success page
+  if (submitStatus === 'success' && successData) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.centeredCard}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              backgroundColor: '#28a745',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px',
+              fontSize: '40px',
+              color: 'white'
+            }}>✓</div>
             <h1 style={{ marginBottom: '16px', color: '#333' }}>Google Sheet Created Successfully!</h1>
             <p style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>
               Your Google Sheet has been created and all data has been written successfully.
             </p>
+            
+            {/* File Details */}
+            <div style={{ 
+              padding: '20px', 
+              backgroundColor: '#f8f9fa', 
+              borderRadius: '8px', 
+              marginBottom: '24px',
+              textAlign: 'left'
+            }}>
+              <h3 style={{ marginBottom: '16px', color: '#333' }}>File Details:</h3>
+              <p style={{ marginBottom: '8px', fontSize: '16px' }}>
+                <strong>File ID:</strong> {successData.fileId}
+              </p>
+              <a 
+                href={successData.fileUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ 
+                  display: 'inline-block', 
+                  marginTop: '8px', 
+                  padding: '12px 24px', 
+                  backgroundColor: '#007bff', 
+                  color: 'white', 
+                  textDecoration: 'none', 
+                  borderRadius: '6px',
+                  fontWeight: '600'
+                }}
+              >
+                Open Google Sheet
+              </a>
+            </div>
+            
             <div style={{ 
               padding: '16px', 
               backgroundColor: '#e7f3ff', 
@@ -143,19 +215,14 @@ export default function Finish() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontSize: '16px'
+                fontSize: '16px',
+                fontWeight: '600'
               }}
             >
               Return Home Now
             </button>
           </div>
         </div>
-        <style jsx>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     );
   }
@@ -208,37 +275,6 @@ export default function Finish() {
         </div>
 
         {/* Status Messages */}
-        {submitStatus === 'success' && successData && (
-          <div style={{ 
-            marginBottom: '24px', 
-            padding: '16px', 
-            backgroundColor: '#d4edda', 
-            border: '1px solid #c3e6cb', 
-            borderRadius: '8px',
-            color: '#155724'
-          }}>
-            <h3 style={{ marginBottom: '8px' }}>✅ Success!</h3>
-            <p>Your Google Sheet has been created successfully.</p>
-            <p><strong>File ID:</strong> {successData.fileId}</p>
-            <a 
-              href={successData.fileUrl} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              style={{ 
-                display: 'inline-block', 
-                marginTop: '8px', 
-                padding: '8px 16px', 
-                backgroundColor: '#007bff', 
-                color: 'white', 
-                textDecoration: 'none', 
-                borderRadius: '4px' 
-              }}
-            >
-              Open Google Sheet
-            </a>
-          </div>
-        )}
-
         {submitStatus === 'error' && (
           <div style={{ 
             marginBottom: '24px', 
