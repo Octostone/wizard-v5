@@ -7,6 +7,11 @@ interface AccountManager {
   email: string;
 }
 
+interface EmailTemplate {
+  subject: string;
+  body: string;
+}
+
 interface AdminData {
   accountManagers: AccountManager[];
   geoOptions: string[];
@@ -16,6 +21,12 @@ interface AdminData {
   category3Options: string[];
   eventTypeOptions: string[];
   pubRevSourceOptions: string[];
+  emailTemplates: EmailTemplate;
+  emailSettings: {
+    defaultRecipients: string[];
+    enableNotifications: boolean;
+    notificationDelay: number;
+  };
 }
 
 // Default data structure
@@ -32,7 +43,36 @@ const defaultAdminData: AdminData = {
   category2Options: ['Cat', 'Dog', 'Bird'],
   category3Options: ['Cat', 'Dog', 'Bird'],
   eventTypeOptions: ['GOAL', 'ADD', 'INITIAL', 'PURCHASE'],
-  pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK']
+  pubRevSourceOptions: ['IN EVENT NAME', 'IN POST BACK'],
+  emailTemplates: {
+    subject: 'New Campaign Created: {clientName} - {fileName}',
+    body: `
+      <h2>New Campaign Created</h2>
+      <p>Hello {accountManagerName},</p>
+      <p>A new campaign has been created for <strong>{clientName}</strong>.</p>
+      
+      <h3>Campaign Details:</h3>
+      <ul>
+        <li><strong>File Name:</strong> {fileName}</li>
+        <li><strong>Google Sheet:</strong> <a href="{googleSheetUrl}">View Sheet</a></li>
+        <li><strong>Google Folder:</strong> <a href="{googleFolderUrl}">View Folder</a></li>
+      </ul>
+      
+      <h3>Form Summary:</h3>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+        {formSummary}
+      </div>
+      
+      <p>Please review the campaign details and take any necessary actions.</p>
+      
+      <p>Best regards,<br>Flourish Wizard System</p>
+    `
+  },
+  emailSettings: {
+    defaultRecipients: [],
+    enableNotifications: true,
+    notificationDelay: 0
+  }
 };
 
 // In-memory fallback for local development

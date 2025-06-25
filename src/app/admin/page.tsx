@@ -26,6 +26,11 @@ interface AccountManager {
   email: string;
 }
 
+interface EmailTemplate {
+  subject: string;
+  body: string;
+}
+
 interface AdminData {
   accountManagers: AccountManager[];
   geoOptions: string[];
@@ -35,6 +40,13 @@ interface AdminData {
   category3Options: string[];
   eventTypeOptions: string[];
   pubRevSourceOptions: string[];
+  // Email configuration
+  emailTemplates: EmailTemplate;
+  emailSettings: {
+    defaultRecipients: string[];
+    enableNotifications: boolean;
+    notificationDelay: number; // in minutes
+  };
 }
 
 type CrudManagerProps = {
@@ -432,6 +444,153 @@ function AccountManagerManager({ accountManagers, setAccountManagers }: AccountM
   );
 }
 
+// Email Template Manager Component
+function EmailTemplateManager({ 
+  emailTemplates, 
+  setEmailTemplates 
+}: { 
+  emailTemplates: EmailTemplate; 
+  setEmailTemplates: React.Dispatch<React.SetStateAction<EmailTemplate>>; 
+}) {
+  return (
+    <div className={styles.adminCard}>
+      <h3>Email Templates</h3>
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          Email Subject Template
+        </label>
+        <input
+          className={styles.input}
+          type="text"
+          value={emailTemplates.subject}
+          onChange={(e) => setEmailTemplates(prev => ({ ...prev, subject: e.target.value }))}
+          placeholder="Email subject template"
+          style={{ width: '100%' }}
+        />
+        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+          Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}
+        </div>
+      </div>
+      
+      <div>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          Email Body Template
+        </label>
+        <textarea
+          className={styles.input}
+          value={emailTemplates.body}
+          onChange={(e) => setEmailTemplates(prev => ({ ...prev, body: e.target.value }))}
+          placeholder="Email body template (HTML supported)"
+          style={{ width: '100%', minHeight: 200, resize: 'vertical' }}
+        />
+        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+          Available placeholders: {'{accountManagerName}'}, {'{clientName}'}, {'{fileName}'}, {'{googleSheetUrl}'}, {'{googleFolderUrl}'}, {'{formSummary}'}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Email Settings Manager Component
+function EmailSettingsManager({ 
+  emailSettings, 
+  setEmailSettings 
+}: { 
+  emailSettings: { defaultRecipients: string[]; enableNotifications: boolean; notificationDelay: number }; 
+  setEmailSettings: React.Dispatch<React.SetStateAction<{ defaultRecipients: string[]; enableNotifications: boolean; notificationDelay: number }>>; 
+}) {
+  const [newRecipient, setNewRecipient] = useState('');
+
+  const handleAddRecipient = () => {
+    if (newRecipient.trim() && !emailSettings.defaultRecipients.includes(newRecipient.trim())) {
+      setEmailSettings(prev => ({
+        ...prev,
+        defaultRecipients: [...prev.defaultRecipients, newRecipient.trim()]
+      }));
+      setNewRecipient('');
+    }
+  };
+
+  const handleRemoveRecipient = (email: string) => {
+    setEmailSettings(prev => ({
+      ...prev,
+      defaultRecipients: prev.defaultRecipients.filter(r => r !== email)
+    }));
+  };
+
+  return (
+    <div className={styles.adminCard}>
+      <h3>Email Settings</h3>
+      
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <input
+            type="checkbox"
+            checked={emailSettings.enableNotifications}
+            onChange={(e) => setEmailSettings(prev => ({ ...prev, enableNotifications: e.target.checked }))}
+          />
+          <span style={{ fontWeight: 'bold' }}>Enable Email Notifications</span>
+        </label>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          Notification Delay (minutes)
+        </label>
+        <input
+          className={styles.input}
+          type="number"
+          min="0"
+          max="60"
+          value={emailSettings.notificationDelay}
+          onChange={(e) => setEmailSettings(prev => ({ ...prev, notificationDelay: parseInt(e.target.value) || 0 }))}
+          style={{ width: '100px' }}
+        />
+        <div style={{ fontSize: '0.8rem', color: '#666', marginTop: 4 }}>
+          Delay before sending notification (0 = immediate)
+        </div>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          Default Additional Recipients
+        </label>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+          <input
+            className={styles.input}
+            type="email"
+            placeholder="email@example.com"
+            value={newRecipient}
+            onChange={(e) => setNewRecipient(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddRecipient()}
+            style={{ flex: 1 }}
+          />
+          <button className={styles.actionButton} onClick={handleAddRecipient}>
+            Add
+          </button>
+        </div>
+        
+        {emailSettings.defaultRecipients.length > 0 && (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {emailSettings.defaultRecipients.map((email, idx) => (
+              <li key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ flex: 1 }}>{email}</span>
+                <button 
+                  className={styles.actionButton} 
+                  onClick={() => handleRemoveRecipient(email)}
+                  style={{ minWidth: 50, background: '#eee', color: '#333' }}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [isAuthed, setIsAuthed] = useState(false);
@@ -449,6 +608,37 @@ export default function AdminPage() {
   const [apiStatus, setApiStatus] = useState<'unknown' | 'working' | 'blocked'>('unknown');
   const [lastSavedData, setLastSavedData] = useState<string>(''); // Track last saved data to prevent overwrites
   const [showApiStatus, setShowApiStatus] = useState(false); // Control API status visibility
+
+  // Email configuration state
+  const [emailTemplates, setEmailTemplates] = useState<EmailTemplate>({
+    subject: 'New Campaign Created: {clientName} - {fileName}',
+    body: `
+      <h2>New Campaign Created</h2>
+      <p>Hello {accountManagerName},</p>
+      <p>A new campaign has been created for <strong>{clientName}</strong>.</p>
+      
+      <h3>Campaign Details:</h3>
+      <ul>
+        <li><strong>File Name:</strong> {fileName}</li>
+        <li><strong>Google Sheet:</strong> <a href="{googleSheetUrl}">View Sheet</a></li>
+        <li><strong>Google Folder:</strong> <a href="{googleFolderUrl}">View Folder</a></li>
+      </ul>
+      
+      <h3>Form Summary:</h3>
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+        {formSummary}
+      </div>
+      
+      <p>Please review the campaign details and take any necessary actions.</p>
+      
+      <p>Best regards,<br>Flourish Wizard System</p>
+    `
+  });
+  const [emailSettings, setEmailSettings] = useState({
+    defaultRecipients: [] as string[],
+    enableNotifications: true,
+    notificationDelay: 0 // in minutes
+  });
 
   // Fetch initial data from API
   useEffect(() => {
@@ -503,6 +693,14 @@ export default function AdminPage() {
         setCategory3(data.category3Options || ["Cat", "Dog", "Bird"]);
         setEventTypes(data.eventTypeOptions || ['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
         setPubRevSources(data.pubRevSourceOptions || ['IN EVENT NAME', 'IN POST BACK']);
+        
+        // Load email configuration
+        if (data.emailTemplates) {
+          setEmailTemplates(data.emailTemplates);
+        }
+        if (data.emailSettings) {
+          setEmailSettings(data.emailSettings);
+        }
       } else {
         console.log('❌ API blocked, status:', response.status);
         setApiStatus('blocked');
@@ -531,7 +729,9 @@ export default function AdminPage() {
       category2Options: category2,
       category3Options: category3,
       eventTypeOptions: eventTypes,
-      pubRevSourceOptions: pubRevSources
+      pubRevSourceOptions: pubRevSources,
+      emailTemplates,
+      emailSettings
     };
     
     const dataString = JSON.stringify(currentData);
@@ -682,6 +882,8 @@ export default function AdminPage() {
             <CrudManager label="Category 3" items={category3} setItems={setCategory3} />
             <CrudManager label="Event Types" items={eventTypes} setItems={setEventTypes} />
             <CrudManager label="Pub Rev Sources" items={pubRevSources} setItems={setPubRevSources} />
+            <EmailTemplateManager emailTemplates={emailTemplates} setEmailTemplates={setEmailTemplates} />
+            <EmailSettingsManager emailSettings={emailSettings} setEmailSettings={setEmailSettings} />
           </div>
         )}
       </div>
