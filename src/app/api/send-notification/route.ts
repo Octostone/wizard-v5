@@ -1,8 +1,6 @@
 import { Resend } from 'resend';
 import { NextRequest, NextResponse } from 'next/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface EmailData {
   accountManagerName: string;
   accountManagerEmail: string;
@@ -18,6 +16,9 @@ interface EmailData {
 
 export async function POST(request: NextRequest) {
   try {
+    // Initialize Resend client inside the function
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    
     const data: EmailData = await request.json();
     
     // Combine account manager email with additional recipients
