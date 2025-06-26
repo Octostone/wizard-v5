@@ -13,6 +13,8 @@ const TEMPLATE_SHEET_ID = process.env.TEMPLATE_SHEET_ID || process.env.GOOGLE_TE
 
 export async function POST(request: Request) {
   try {
+    console.log('🔍 Google Sheets API called');
+    
     // --- Environment Variable and Request Body Validation ---
     console.log('🔍 Environment variables check:');
     console.log('TEMPLATE_SHEET_ID:', process.env.TEMPLATE_SHEET_ID ? 'SET' : 'NOT SET');
@@ -26,6 +28,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
+    console.log('📦 Request body received:', {
+      hasOutputFileName: !!body.outputFileName,
+      hasTargetFolderId: !!body.targetFolderId,
+      hasFormData: !!body.formData,
+      uploadedFilesCount: body.formData?.uploadedFiles?.length || 0
+    });
+    
     const { 
       outputFileName, 
       targetFolderId, 
@@ -33,6 +42,7 @@ export async function POST(request: Request) {
     } = body;
 
     if (!outputFileName || !targetFolderId || !formData) {
+      console.error('❌ Missing required fields:', { outputFileName, targetFolderId, hasFormData: !!formData });
       return NextResponse.json({ error: 'Missing required fields in request body' }, { status: 400 });
     }
 
@@ -62,6 +72,7 @@ export async function POST(request: Request) {
     }
     
     // --- Step 2: Copy the Template File ---
+    console.log('📋 Copying template file...');
     const copiedFile = await drive.files.copy({
       fileId: TEMPLATE_SHEET_ID,
       requestBody: {
@@ -74,8 +85,11 @@ export async function POST(request: Request) {
 
     const newSheetId = copiedFile.data.id;
     if (!newSheetId) {
+      console.error('❌ Failed to get new sheet ID from copied file');
       throw new Error('Failed to create a copy of the template file.');
     }
+    
+    console.log('✅ Google Sheet created with ID:', newSheetId);
 
     // --- Step 3: Write Form Data to the New Sheet ---
     // This logic is restored from the original version to match the template's structure.

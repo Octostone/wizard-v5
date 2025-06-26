@@ -146,6 +146,13 @@ export default function Finish() {
         uploadedFiles: uploadedFiles
       };
 
+      console.log('Sending form data to Google Sheets API:', {
+        outputFileName: form.outputFileName,
+        targetFolderId: form.targetFolderId,
+        uploadedFilesCount: uploadedFiles.length,
+        formDataKeys: Object.keys(formDataToSend)
+      });
+
       const response = await fetch('/api/google-sheets', {
         method: 'POST',
         headers: {
@@ -158,7 +165,10 @@ export default function Finish() {
         }),
       });
 
+      console.log('Google Sheets API response status:', response.status);
+      
       const data = await response.json();
+      console.log('Google Sheets API response data:', data);
 
       if (response.ok && data.success) {
         setSubmitStatus('success');
