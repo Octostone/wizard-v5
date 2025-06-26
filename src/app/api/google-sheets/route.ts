@@ -284,6 +284,73 @@ export async function POST(request: Request) {
       }
     });
 
+    // --- Step 4: Send Email Notification ---
+    console.log('📧 Sending email notification...');
+    try {
+      // Get admin data to access email templates and settings
+      const adminResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/admin`);
+      if (adminResponse.ok) {
+        const adminData = await adminResponse.json();
+        
+        // Check if email notifications are enabled
+        if (adminData.emailSettings?.enableNotifications) {
+          // Find the account manager's email
+          const accountManager = adminData.accountManagers?.find((am: any) => am.name === formData.accountManager);
+          const accountManagerEmail = accountManager?.email;
+          
+          if (accountManagerEmail) {
+            // Prepare form summary
+            const formSummary = `
+              <strong>Client:</strong> ${formData.flourishClientName}<br>
+              <strong>App:</strong> ${formData.appName}<br>
+              <strong>Geo:</strong> ${formData.geo}<br>
+              <strong>Campaign:</strong> ${formData.clientCampaignName}<br>
+              <strong>Images:</strong> ${formData.uploadedFiles?.length || 0} files uploaded
+            `;
+            
+            // Prepare Google folder URL
+            const googleFolderUrl = `https://drive.google.com/drive/folders/${targetFolderId}`;
+            
+            // Send email notification
+            const emailResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/send-notification`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                accountManagerName: formData.accountManager,
+                accountManagerEmail: accountManagerEmail,
+                clientName: formData.flourishClientName,
+                fileName: outputFileName,
+                googleSheetUrl: copiedFile.data.webViewLink,
+                googleFolderUrl: googleFolderUrl,
+                formSummary: formSummary,
+                additionalRecipients: adminData.emailSettings?.defaultRecipients || [],
+                emailSubject: adminData.emailTemplates?.subject || 'New Campaign Created: {clientName} - {fileName}',
+                emailBody: adminData.emailTemplates?.body || 'A new campaign has been created.'
+              }),
+            });
+            
+            if (emailResponse.ok) {
+              const emailData = await emailResponse.json();
+              console.log('✅ Email notification sent successfully:', emailData);
+            } else {
+              console.error('❌ Failed to send email notification:', await emailResponse.text());
+            }
+          } else {
+            console.warn('⚠️ Account manager email not found for:', formData.accountManager);
+          }
+        } else {
+          console.log('ℹ️ Email notifications are disabled in admin settings');
+        }
+      } else {
+        console.error('❌ Failed to fetch admin data for email notification');
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending email notification:', emailError);
+      // Don't fail the entire operation if email fails
+    }
+
     // --- Success Response ---
     return NextResponse.json({
       success: true,
