@@ -54,7 +54,7 @@ export default function ClientDetails() {
   };
 
   const handleGrossDeductionFocus = () => {
-    if (form.netGross !== "gross") {
+    if (form.netGross !== "net") {
       setGrossDeductionError("Value not needed");
       setTimeout(() => setGrossDeductionError("") , 2000);
     }
@@ -63,7 +63,7 @@ export default function ClientDetails() {
   // Get placeholder text based on netGross selection
   const getGrossDeductionPlaceholder = () => {
     if (!form.netGross) return "Percent to be deducted";
-    return form.netGross === "gross" ? "Insert value deducted here" : "No value needed";
+    return form.netGross === "net" ? "Insert value deducted here" : "No value needed";
   };
 
   return (
@@ -110,8 +110,8 @@ export default function ClientDetails() {
               onChange={e => setField("netGross", e.target.value)}
             >
               <option value="" disabled>Is client passing us net or gross values on IAP&apos;s?</option>
-              <option value="net">net</option>
-              <option value="gross">gross</option>
+              <option value="net">Net</option>
+              <option value="gross">Gross</option>
             </select>
             <label className={styles.floatingLabel}>Net/Gross</label>
           </div>
@@ -125,8 +125,8 @@ export default function ClientDetails() {
               value={form.grossDeduction}
               onChange={e => handleGrossDeductionChange(e.target.value)}
               placeholder={getGrossDeductionPlaceholder()}
-              required={form.netGross === "gross"}
-              disabled={form.netGross !== "gross"}
+              required={form.netGross === "net"}
+              disabled={form.netGross !== "net"}
               onFocus={handleGrossDeductionFocus}
             />
             <label className={styles.floatingLabel} style={{ 
@@ -147,7 +147,7 @@ export default function ClientDetails() {
               value={form.baseCM}
               onChange={e => setField("baseCM", e.target.value)}
             >
-              <option value="" disabled>Is client passing base or CM values?</option>
+              <option value="" disabled>Is client passing Base or CM values?</option>
               <option value="base">BASE</option>
               <option value="CM">CM</option>
             </select>
