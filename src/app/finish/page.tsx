@@ -35,16 +35,22 @@ export default function Finish() {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            clearInterval(timer);
-            resetForm();
-            router.push("/");
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
 
-      return () => clearInterval(timer);
+      // Set up a separate timeout for the redirect
+      const redirectTimer = setTimeout(() => {
+        resetForm();
+        router.push("/");
+      }, 10000);
+
+      return () => {
+        clearInterval(timer);
+        clearTimeout(redirectTimer);
+      };
     }
   }, [submitStatus, resetForm, router]);
 
@@ -185,7 +191,7 @@ export default function Finish() {
               textAlign: 'left'
             }}>
               <h3 style={{ marginBottom: '16px', color: '#333' }}>File Details:</h3>
-              <p style={{ marginBottom: '8px', fontSize: '16px' }}>
+              <p style={{ marginBottom: '8px', fontSize: '16px', color: '#000' }}>
                 <strong>File ID:</strong> {successData.fileId}
               </p>
               <a 
