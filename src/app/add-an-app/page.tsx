@@ -19,6 +19,7 @@ export default function AddAnApp() {
   const [category1Options, setCategory1Options] = useState<string[]>([]);
   const [category2Options, setCategory2Options] = useState<string[]>([]);
   const [category3Options, setCategory3Options] = useState<string[]>([]);
+  const [storeUrlError, setStoreUrlError] = useState("");
   const router = useRouter();
   const pathname = usePathname();
 
@@ -80,6 +81,23 @@ export default function AddAnApp() {
   // Helper to remove line breaks
   const stripLineBreaks = (value: string) => value.replace(/[\r\n]+/g, " ");
 
+  // Validate store URL
+  const validateStoreUrl = (url: string) => {
+    if (!url) return "";
+    const requiredPrefix = "https://play.google.com/store/apps/";
+    if (!url.startsWith(requiredPrefix)) {
+      return `URL must start with ${requiredPrefix}`;
+    }
+    return "";
+  };
+
+  const handleStoreUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setField("storeUrl", value);
+    const error = validateStoreUrl(value);
+    setStoreUrlError(error);
+  };
+
   return (
     <div className={styles.page}>
       <ProgressBar steps={progressSteps} />
@@ -123,9 +141,9 @@ export default function AddAnApp() {
               value={form.appName}
               onChange={e => setField("appName", stripLineBreaks(e.target.value))}
               onKeyDown={preventLineBreaks}
-              placeholder="This will be the common name used in Flourish"
+              placeholder=" "
             />
-            <label className={styles.floatingLabel}>App Name*</label>
+            <label className={styles.floatingLabel}>App Name</label>
           </div>
 
           <div className={styles.formGroup}>
@@ -148,10 +166,13 @@ export default function AddAnApp() {
               className={styles.floatingInput}
               type="text"
               value={form.storeUrl}
-              onChange={e => setField("storeUrl", e.target.value)}
+              onChange={handleStoreUrlChange}
               onKeyDown={preventLineBreaks}
+              placeholder=" "
+              style={storeUrlError ? { borderColor: 'red' } : {}}
             />
             <label className={styles.floatingLabel}>Store URL</label>
+            {storeUrlError && <div style={{ color: 'red', fontSize: 13, marginTop: 4 }}>{storeUrlError}</div>}
           </div>
 
           <div className={styles.formGroup}>
