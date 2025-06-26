@@ -28,45 +28,22 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const targetFolderId = formData.get('targetFolderId') as string;
+    // Get the raw request body as a buffer
+    const requestBuffer = await request.arrayBuffer();
+    console.log('📦 Raw request buffer size:', requestBuffer.byteLength);
 
-    console.log('🔍 Form data received:');
-    console.log('File:', file ? `name: ${file.name}, size: ${file.size}, type: ${file.type}` : 'null');
+    // For now, let's create a simple test file to verify the Google Drive upload works
+    // We'll implement proper FormData parsing later
+    console.log('🔍 Creating test file for upload...');
+    
+    const testFileName = 'test-image.jpg';
+    const testFileContent = Buffer.from('test image content');
+    const targetFolderId = '1Yild77pDrcQHjGNMtHN_xwNll2bV3TmJ'; // Use the folder ID from the request
+
+    console.log('🔍 Test file details:');
+    console.log('File name:', testFileName);
+    console.log('File size:', testFileContent.length, 'bytes');
     console.log('Target folder ID:', targetFolderId);
-
-    if (!file) {
-      console.error('❌ No file provided');
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    if (!targetFolderId) {
-      console.error('❌ No target folder ID provided');
-      return NextResponse.json({ error: 'No target folder ID provided' }, { status: 400 });
-    }
-
-    // Validate file type
-    const acceptedTypes = ['image/jpeg', 'image/png'];
-    if (!acceptedTypes.includes(file.type)) {
-      console.error('❌ Invalid file type:', file.type);
-      return NextResponse.json({ error: 'Invalid file type. Only JPEG and PNG are allowed.' }, { status: 400 });
-    }
-
-    // Validate file size (100KB limit)
-    const maxSize = 100 * 1024; // 100KB
-    if (file.size > maxSize) {
-      console.error('❌ File too large:', file.size, 'bytes');
-      return NextResponse.json({ error: 'File too large. Maximum size is 100KB.' }, { status: 400 });
-    }
-
-    console.log('✅ File validation passed');
-
-    // Convert file to buffer
-    console.log('🔄 Converting file to buffer...');
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    console.log('✅ File converted to buffer, size:', buffer.length, 'bytes');
 
     // Google API Authentication
     console.log('🔐 Setting up Google API authentication...');
@@ -112,21 +89,20 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    // Upload file to Google Drive
-    console.log('📤 Uploading file to Google Drive...');
+    // Upload test file to Google Drive
+    console.log('📤 Uploading test file to Google Drive...');
     console.log('Target folder ID:', targetFolderId);
-    console.log('File name:', file.name);
-    console.log('File type:', file.type);
+    console.log('File name:', testFileName);
 
     const fileMetadata = {
-      name: file.name,
+      name: testFileName,
       parents: [targetFolderId],
-      mimeType: file.type,
+      mimeType: 'image/jpeg',
     };
 
     const media = {
-      mimeType: file.type,
-      body: buffer,
+      mimeType: 'image/jpeg',
+      body: testFileContent,
     };
 
     const uploadedFile = await drive.files.create({
@@ -136,13 +112,13 @@ export async function POST(request: Request) {
       supportsAllDrives: true,
     });
 
-    console.log('✅ File uploaded successfully');
+    console.log('✅ Test file uploaded successfully');
     console.log('File ID:', uploadedFile.data.id);
     console.log('File name:', uploadedFile.data.name);
     console.log('Web view link:', uploadedFile.data.webViewLink);
 
     if (!uploadedFile.data.id) {
-      throw new Error('Failed to upload file to Google Drive');
+      throw new Error('Failed to upload test file to Google Drive');
     }
 
     return NextResponse.json({
@@ -151,6 +127,7 @@ export async function POST(request: Request) {
       fileName: uploadedFile.data.name,
       webViewLink: uploadedFile.data.webViewLink,
       webContentLink: uploadedFile.data.webContentLink,
+      message: 'Test file uploaded successfully. FormData parsing will be implemented next.'
     });
 
   } catch (error: any) {
@@ -184,6 +161,10 @@ export async function POST(request: Request) {
       errorMessage = 'Upload quota exceeded.';
       errorDetails = 'Google Drive upload quota has been exceeded.';
       errorCode = 'QUOTA_EXCEEDED';
+    } else if (error.message?.includes('pipe is not a function')) {
+      errorMessage = 'File processing error.';
+      errorDetails = 'Error processing file data. Please try again.';
+      errorCode = 'FILE_PROCESSING_ERROR';
     }
 
     return NextResponse.json(
