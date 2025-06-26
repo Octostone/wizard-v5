@@ -289,7 +289,15 @@ export async function POST(request: Request) {
     try {
       // Get admin data to access email templates and settings
       console.log('🔍 Fetching admin data for email configuration...');
-      const adminResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/admin`);
+      
+      // Ensure proper URL construction with protocol
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}` 
+        : 'http://localhost:3000';
+      
+      console.log('🌐 Using base URL:', baseUrl);
+      
+      const adminResponse = await fetch(`${baseUrl}/api/admin`);
       console.log('📡 Admin API response status:', adminResponse.status);
       
       if (adminResponse.ok) {
@@ -350,7 +358,7 @@ export async function POST(request: Request) {
             
             // Send email notification
             console.log('📧 Calling send-notification API...');
-            const emailResponse = await fetch(`${process.env.VERCEL_URL || 'http://localhost:3000'}/api/send-notification`, {
+            const emailResponse = await fetch(`${baseUrl}/api/send-notification`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
