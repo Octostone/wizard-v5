@@ -9,6 +9,8 @@ import ProgressBar from "../../components/ProgressBar";
 
 const MAX_FILE_SIZE = 100 * 1024; // 100 kB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
+const ICON_DIMENSIONS = { width: 300, height: 300 };
+const FILL_DIMENSIONS = { width: 291, height: 465 };
 
 function formatDatePrefix(type: string) {
   const now = new Date();
@@ -17,6 +19,27 @@ function formatDatePrefix(type: string) {
   const day = String(now.getDate()).padStart(2, '0');
   return `${year}${month}${day}_${type}`;
 }
+
+// Function to check image dimensions
+const checkImageDimensions = (file: File, expectedDimensions: { width: number; height: number }): Promise<boolean> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const isValid = img.width === expectedDimensions.width && img.height === expectedDimensions.height;
+      resolve(isValid);
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(false);
+    };
+    
+    img.src = url;
+  });
+};
 
 export default function AddImages() {
   const { form, setField } = useFormContext();
@@ -68,40 +91,62 @@ export default function AddImages() {
     return errors;
   };
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setIconError("");
     const file = e.target.files?.[0];
     if (!file) return;
+    
     const errors = validateFile(file);
     if (errors.length > 0) {
       setIconError(errors.join(". "));
       setField("iconImageName", "");
       setField("iconImageLink", "");
-    } else {
-      // Store the file name in form context
-      setField("iconImageName", file.name);
-      // Generate a placeholder link for Google Drive folder
-      setField("iconImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
-      setIconError("");
+      return;
     }
+
+    // Check dimensions
+    const isValidDimensions = await checkImageDimensions(file, ICON_DIMENSIONS);
+    if (!isValidDimensions) {
+      setIconError(`Image must be exactly ${ICON_DIMENSIONS.width}x${ICON_DIMENSIONS.height} pixels`);
+      setField("iconImageName", "");
+      setField("iconImageLink", "");
+      return;
+    }
+
+    // Store the file name in form context
+    setField("iconImageName", file.name);
+    // Generate a placeholder link for Google Drive folder
+    setField("iconImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
+    setIconError("");
   };
 
-  const handleFillUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setFillError("");
     const file = e.target.files?.[0];
     if (!file) return;
+    
     const errors = validateFile(file);
     if (errors.length > 0) {
       setFillError(errors.join(". "));
       setField("fillImageName", "");
       setField("fillImageLink", "");
-    } else {
-      // Store the file name in form context
-      setField("fillImageName", file.name);
-      // Generate a placeholder link for Google Drive folder
-      setField("fillImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
-      setFillError("");
+      return;
     }
+
+    // Check dimensions
+    const isValidDimensions = await checkImageDimensions(file, FILL_DIMENSIONS);
+    if (!isValidDimensions) {
+      setFillError(`Image must be exactly ${FILL_DIMENSIONS.width}x${FILL_DIMENSIONS.height} pixels`);
+      setField("fillImageName", "");
+      setField("fillImageLink", "");
+      return;
+    }
+
+    // Store the file name in form context
+    setField("fillImageName", file.name);
+    // Generate a placeholder link for Google Drive folder
+    setField("fillImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
+    setFillError("");
   };
 
   return (
@@ -168,6 +213,11 @@ export default function AddImages() {
             <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
               {form.iconImageName || 'No file chosen'}
             </span>
+            {iconError && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: 4 }}>
+                {iconError}
+              </div>
+            )}
           </div>
           {/* Upload Fill Image (Rectangle) */}
           <div className={styles.formGroup}>
@@ -189,6 +239,11 @@ export default function AddImages() {
             <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
               {form.fillImageName || 'No file chosen'}
             </span>
+            {fillError && (
+              <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: 4 }}>
+                {fillError}
+              </div>
+            )}
           </div>
         </form>
         <div className={styles.navButtonGroup}>
