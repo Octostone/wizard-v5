@@ -163,7 +163,7 @@ export default function AddImages() {
     setField("fillFiles", fillFiles);
     setField("iconImageNames", iconFiles.map(f => f.name).join(", "));
     setField("fillImageNames", fillFiles.map(f => f.name).join(", "));
-  }, [iconFiles, fillFiles, setField]);
+  }, [iconFiles, fillFiles]);
 
   return (
     <div className={styles.page}>
