@@ -13,7 +13,7 @@ export default function Finish() {
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error' | 'processing'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [successData, setSuccessData] = useState<{ fileId: string; fileUrl: string } | null>(null);
-  const [countdown, setCountdown] = useState(5);
+  const [countdown, setCountdown] = useState(10);
 
   // Handle countdown and redirect after success
   useEffect(() => {
@@ -73,7 +73,7 @@ export default function Finish() {
           fileId: data.fileId,
           fileUrl: data.fileUrl
         });
-        setCountdown(5);
+        setCountdown(10);
       } else {
         setSubmitStatus('error');
         const errorMsg = data.error || data.details || 'Failed to create Google Sheet. Please try again.';
@@ -114,7 +114,7 @@ export default function Finish() {
               margin: '0 auto 24px'
             }}></div>
             <h1 style={{ marginBottom: '16px', color: '#333' }}>Creating Your Google Sheet</h1>
-            <p style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>
+            <p style={{ fontSize: '18px', color: '#000', marginBottom: '24px' }}>
               Please wait while we create your Google Sheet and populate it with your data...
             </p>
             <div style={{ 
@@ -158,7 +158,7 @@ export default function Finish() {
               color: 'white'
             }}>✓</div>
             <h1 style={{ marginBottom: '16px', color: '#333' }}>Google Sheet Created Successfully!</h1>
-            <p style={{ fontSize: '18px', color: '#666', marginBottom: '24px' }}>
+            <p style={{ fontSize: '18px', color: '#000', marginBottom: '24px' }}>
               Your Google Sheet has been created and all data has been written successfully.
             </p>
             
