@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.centeredCard}>
+      <div className={styles.centeredCardNarrow}>
         <h1 className={styles.title}>Flourish Wizard</h1>
         <form className={styles.form} autoComplete="off">
           <div className={styles.formGroup}>

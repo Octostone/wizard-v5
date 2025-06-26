@@ -5,15 +5,17 @@ import { useFormContext } from "../../context/FormContext";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import ClearButton from "../../components/ClearButton";
+import ProgressBar from "../../components/ProgressBar";
 
 const MAX_FILE_SIZE = 100 * 1024; // 100 kB
 const ACCEPTED_TYPES = ["image/jpeg", "image/png"];
 
 function formatDatePrefix(type: string) {
   const now = new Date();
-  const date = now.toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: '2-digit' });
-  const time = now.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
-  return `${date} ${time} ${type}`;
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}${month}${day}_${type}`;
 }
 
 export default function AddImages() {
@@ -25,6 +27,18 @@ export default function AddImages() {
   const pathname = usePathname();
   const iconInputRef = useRef<HTMLInputElement>(null);
   const fillInputRef = useRef<HTMLInputElement>(null);
+
+  const progressSteps = [
+    { name: 'Home', path: '/' },
+    { name: 'Client Basics', path: '/client-basics' },
+    { name: 'Client Details', path: '/client-details' },
+    { name: 'Add an App', path: '/add-an-app' },
+    { name: 'Add Events', path: '/add-events' },
+    { name: 'Add Campaign', path: '/add-campaign' },
+    { name: 'Add Offers', path: '/add-offers' },
+    { name: 'Add Images', path: '/add-images' },
+    { name: 'Finish', path: '/finish' },
+  ];
 
   useEffect(() => {
     fetch("/api/admin")
@@ -92,38 +106,9 @@ export default function AddImages() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.centeredCard}>
+      <ProgressBar steps={progressSteps} />
+      <div className={styles.centeredCardNarrow}>
         <h1 className={styles.title}>Add Images</h1>
-        {/* Progress Bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 40, gap: 8 }}>
-          {[
-            { name: 'Home', path: '/' },
-            { name: 'Client Basics', path: '/client-basics' },
-            { name: 'Client Details', path: '/client-details' },
-            { name: 'Add an App', path: '/add-an-app' },
-            { name: 'Add Events', path: '/add-events' },
-            { name: 'Add Campaign', path: '/add-campaign' },
-            { name: 'Add Offers', path: '/add-offers' },
-            { name: 'Add Images', path: '/add-images' },
-            { name: 'Finish', path: '/finish' },
-          ].map((step, idx, arr) => (
-            <React.Fragment key={step.path}>
-              <Link href={step.path} style={{
-                padding: '6px 14px',
-                borderRadius: 16,
-                background: pathname === step.path ? '#1976d2' : '#e3eafc',
-                color: pathname === step.path ? '#fff' : '#1976d2',
-                fontWeight: pathname === step.path ? 600 : 400,
-                textDecoration: 'none',
-                fontSize: 15,
-                border: pathname === step.path ? '2px solid #1976d2' : '2px solid #e3eafc',
-                transition: 'background 0.2s, color 0.2s, border 0.2s',
-                cursor: 'pointer',
-              }}>{step.name}</Link>
-              {idx < arr.length - 1 && <span style={{ color: '#888', margin: '0 4px', display: 'flex', alignItems: 'center' }}>→</span>}
-            </React.Fragment>
-          ))}
-        </div>
         <form className={styles.form} autoComplete="off">
           {/* Flourish Client Name */}
           <div className={styles.formGroup}>

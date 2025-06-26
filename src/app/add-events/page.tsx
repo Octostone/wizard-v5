@@ -1,11 +1,12 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "../page.module.css";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useFormContext, EventItem } from "../../context/FormContext";
 import ClearButton from "../../components/ClearButton";
 import EventRowItem from "../../components/EventRowItem";
+import ProgressBar from "../../components/ProgressBar";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 
@@ -13,12 +14,24 @@ export default function AddEvents() {
   const router = useRouter();
   const pathname = usePathname();
   const { form, setField } = useFormContext();
-  const [eventTypes, setEventTypes] = useState<string[]>([]);
-  const [pubReveSources, setPubReveSources] = useState<string[]>([]);
+  const [eventTypes, setEventTypes] = useState<string[]>(['GOAL', 'ADD', 'INITIAL', 'PURCHASE']);
+  const [pubReveSources, setPubReveSources] = useState<string[]>(['IN EVENT NAME', 'IN POST BACK']);
   const [newRowId, setNewRowId] = useState<string | null>(null);
   
-  // Get existing event positions
-  const positions = form.events.map(event => event.position);
+  const progressSteps = [
+    { name: 'Home', path: '/' },
+    { name: 'Client Basics', path: '/client-basics' },
+    { name: 'Client Details', path: '/client-details' },
+    { name: 'Add an App', path: '/add-an-app' },
+    { name: 'Add Events', path: '/add-events' },
+    { name: 'Add Campaign', path: '/add-campaign' },
+    { name: 'Add Offers', path: '/add-offers' },
+    { name: 'Add Images', path: '/add-images' },
+    { name: 'Finish', path: '/finish' },
+  ];
+
+  // Generate positions array for dropdown
+  const positions = Array.from({ length: 20 }, (_, i) => (i + 1).toString());
 
   // DnD setup
   const sensors = useSensors(useSensor(PointerSensor, {
@@ -103,6 +116,7 @@ export default function AddEvents() {
 
   return (
     <div className={styles.page}>
+      <ProgressBar steps={progressSteps} />
       <div className={styles.eventsContainer}>
         <h1 className={styles.title}>Add Events</h1>
         {/* Progress Bar */}

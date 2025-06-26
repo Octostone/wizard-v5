@@ -3,8 +3,9 @@ import React, { useEffect, useState, useRef } from "react";
 import styles from "../page.module.css";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { useFormContext } from "../../context/FormContext";
+import { useFormContext, FormState } from "../../context/FormContext";
 import ClearButton from "../../components/ClearButton";
+import ProgressBar from "../../components/ProgressBar";
 
 interface AccountManager {
   name: string;
@@ -19,9 +20,21 @@ export default function AddCampaign() {
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
   const router = useRouter();
   const pathname = usePathname();
-  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const [errors, setErrors] = useState<{ flourishClientName?: string; dailyBudget?: string }>({});
   const [clickUrl, setClickUrl] = useState(form.clickUrl || "");
   const clickUrlRef = useRef<HTMLTextAreaElement>(null);
+
+  const progressSteps = [
+    { name: 'Home', path: '/' },
+    { name: 'Client Basics', path: '/client-basics' },
+    { name: 'Client Details', path: '/client-details' },
+    { name: 'Add an App', path: '/add-an-app' },
+    { name: 'Add Events', path: '/add-events' },
+    { name: 'Add Campaign', path: '/add-campaign' },
+    { name: 'Add Offers', path: '/add-offers' },
+    { name: 'Add Images', path: '/add-images' },
+    { name: 'Finish', path: '/finish' },
+  ];
 
   useEffect(() => {
     fetch("/api/admin")
@@ -59,44 +72,43 @@ export default function AddCampaign() {
     }
   }, [clickUrl]);
 
-  // Validation helpers
+  // Format number with commas
   const formatNumber = (value: string) => {
-    if (!value) return "";
-    const num = parseInt(value.replace(/,/g, ""));
-    if (isNaN(num)) return "";
-    return num.toLocaleString();
+    const numericValue = value.replace(/[^0-9]/g, '');
+    if (numericValue === '') return '';
+    return parseInt(numericValue).toLocaleString();
   };
 
+  // Handle budget changes
   const handleBudgetChange = (field: "monthlyBudget" | "dailyBudget", value: string) => {
-    // Only allow numbers and commas
-    let clean = value.replace(/[^0-9]/g, "");
-    clean = formatNumber(clean);
-    setField(field, clean);
-  };
-
-  const handleClientCampaignName = (value: string) => {
-    // Remove spaces automatically
-    setField("clientCampaignName", value.replace(/\s/g, ""));
-  };
-
-  const handleRoasChange = (field: keyof typeof form, value: string) => {
-    setField(field, value.replace(/[^0-9]/g, ""));
-  };
-
-  // Validation for daily < monthly
-  useEffect(() => {
-    if (form.dailyBudget && form.monthlyBudget) {
-      const daily = parseInt(form.dailyBudget.replace(/,/g, ""));
-      const monthly = parseInt(form.monthlyBudget.replace(/,/g, ""));
-      if (daily >= monthly) {
-        setErrors((e) => ({ ...e, dailyBudget: "Daily budget must be less than monthly budget." }));
+    const formattedValue = formatNumber(value);
+    setField(field, formattedValue);
+    
+    // Validate daily budget
+    if (field === "dailyBudget") {
+      const monthlyBudget = parseInt(form.monthlyBudget?.replace(/[^0-9]/g, '') || '0');
+      const dailyBudget = parseInt(value.replace(/[^0-9]/g, '') || '0');
+      
+      if (monthlyBudget > 0 && dailyBudget > 0 && dailyBudget * 30 > monthlyBudget) {
+        setErrors(prev => ({ ...prev, dailyBudget: "Daily budget × 30 cannot exceed monthly budget" }));
       } else {
-        setErrors((e) => ({ ...e, dailyBudget: undefined }));
+        setErrors(prev => ({ ...prev, dailyBudget: undefined }));
       }
     }
-  }, [form.dailyBudget, form.monthlyBudget]);
+  };
 
-  // Flourish client name validation (reuse from other pages)
+  // Handle client campaign name
+  const handleClientCampaignName = (value: string) => {
+    setField("clientCampaignName", value);
+  };
+
+  // Handle ROAS changes
+  const handleRoasChange = (field: "D7" | "D14" | "D30" | "D60" | "D90" | "D180", value: string) => {
+    const numericValue = value.replace(/[^0-9.]/g, '');
+    setField(field, numericValue);
+  };
+
+  // Validation for Flourish Client Name
   const validateFlourish = (value: string) => {
     if (/\s/.test(value)) return "No spaces allowed.";
     if (/[^a-z0-9_]/.test(value)) return "Only lowercase letters, numbers, and underscores allowed.";
@@ -109,38 +121,9 @@ export default function AddCampaign() {
 
   return (
     <div className={styles.page}>
-      <div className={styles.centeredCard}>
+      <ProgressBar steps={progressSteps} />
+      <div className={styles.centeredCardNarrow}>
         <h1 className={styles.title}>Add Campaign</h1>
-        {/* Progress Bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 40, gap: 8 }}>
-          {[
-            { name: 'Home', path: '/' },
-            { name: 'Client Basics', path: '/client-basics' },
-            { name: 'Client Details', path: '/client-details' },
-            { name: 'Add an App', path: '/add-an-app' },
-            { name: 'Add Events', path: '/add-events' },
-            { name: 'Add Campaign', path: '/add-campaign' },
-            { name: 'Add Offers', path: '/add-offers' },
-            { name: 'Add Images', path: '/add-images' },
-            { name: 'Finish', path: '/finish' },
-          ].map((step, idx, arr) => (
-            <React.Fragment key={step.path}>
-              <Link href={step.path} style={{
-                padding: '6px 14px',
-                borderRadius: 16,
-                background: pathname === step.path ? '#1976d2' : '#e3eafc',
-                color: pathname === step.path ? '#fff' : '#1976d2',
-                fontWeight: pathname === step.path ? 600 : 400,
-                textDecoration: 'none',
-                fontSize: 15,
-                border: pathname === step.path ? '2px solid #1976d2' : '2px solid #e3eafc',
-                transition: 'background 0.2s, color 0.2s, border 0.2s',
-                cursor: 'pointer',
-              }}>{step.name}</Link>
-              {idx < arr.length - 1 && <span style={{ color: '#888', margin: '0 4px', display: 'flex', alignItems: 'center' }}>→</span>}
-            </React.Fragment>
-          ))}
-        </div>
         <form className={styles.form} autoComplete="off">
           {/* Account Manager */}
           <div className={styles.formGroup}>

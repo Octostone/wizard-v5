@@ -7,6 +7,7 @@ import { useFormContext } from "../../context/FormContext";
 import ClearButton from "../../components/ClearButton";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import ProgressBar from "../../components/ProgressBar";
 
 interface Offer {
   id: string;
@@ -54,8 +55,20 @@ export default function AddOffers() {
   const pathname = usePathname();
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [genderOptions, setGenderOptions] = useState<string[]>(["Male", "Female", "Any"]);
-  const [offers, setOffers] = useState<Offer[]>([initialOffer(form.geo)]);
-  const [errors, setErrors] = useState<OfferErrors[]>([{}]);
+  const [offers, setOffers] = useState<Offer[]>(form.offers.length > 0 ? form.offers : [initialOffer(form.geo)]);
+  const [errors, setErrors] = useState<OfferErrors[]>([]);
+
+  const progressSteps = [
+    { name: 'Home', path: '/' },
+    { name: 'Client Basics', path: '/client-basics' },
+    { name: 'Client Details', path: '/client-details' },
+    { name: 'Add an App', path: '/add-an-app' },
+    { name: 'Add Events', path: '/add-events' },
+    { name: 'Add Campaign', path: '/add-campaign' },
+    { name: 'Add Offers', path: '/add-offers' },
+    { name: 'Add Images', path: '/add-images' },
+    { name: 'Finish', path: '/finish' },
+  ];
 
   // Fetch admin dropdowns
   useEffect(() => {
@@ -77,6 +90,11 @@ export default function AddOffers() {
       setOffers([{ ...offers[0], geo: form.geo }]);
     }
   }, [form.geo, offers]);
+
+  // Update form when offers change
+  useEffect(() => {
+    setField('offers', offers);
+  }, [offers, setField]);
 
   // Validation
   const validateRow = (row: Offer): OfferErrors => {
@@ -155,38 +173,9 @@ export default function AddOffers() {
 
   return (
     <div className={styles.page}>
+      <ProgressBar steps={progressSteps} />
       <div className={styles.centeredCard}>
         <h1 className={styles.title}>Add Offers</h1>
-        {/* Progress Bar */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 40, gap: 8 }}>
-          {[
-            { name: 'Home', path: '/' },
-            { name: 'Client Basics', path: '/client-basics' },
-            { name: 'Client Details', path: '/client-details' },
-            { name: 'Add an App', path: '/add-an-app' },
-            { name: 'Add Events', path: '/add-events' },
-            { name: 'Add Campaign', path: '/add-campaign' },
-            { name: 'Add Offers', path: '/add-offers' },
-            { name: 'Add Images', path: '/add-images' },
-            { name: 'Finish', path: '/finish' },
-          ].map((step, idx, arr) => (
-            <React.Fragment key={step.path}>
-              <Link href={step.path} style={{
-                padding: '6px 14px',
-                borderRadius: 16,
-                background: pathname === step.path ? '#1976d2' : '#e3eafc',
-                color: pathname === step.path ? '#fff' : '#1976d2',
-                fontWeight: pathname === step.path ? 600 : 400,
-                textDecoration: 'none',
-                fontSize: 15,
-                border: pathname === step.path ? '2px solid #1976d2' : '2px solid #e3eafc',
-                transition: 'background 0.2s, color 0.2s, border 0.2s',
-                cursor: 'pointer',
-              }}>{step.name}</Link>
-              {idx < arr.length - 1 && <span style={{ color: '#888', margin: '0 4px', display: 'flex', alignItems: 'center' }}>→</span>}
-            </React.Fragment>
-          ))}
-        </div>
         {/* Headers */}
         <div className={styles.eventsHeader}>
           <div className={styles.eventDragHandle}></div>
