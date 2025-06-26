@@ -290,8 +290,14 @@ export async function POST(request: Request) {
       // Get admin data to access email templates and settings
       console.log('🔍 Fetching admin data for email configuration...');
       
-      // Use relative URL for internal API call
-      const adminResponse = await fetch('/api/admin');
+      // Always use the full Vercel deployment URL for server-side fetches
+      if (!process.env.VERCEL_URL) {
+        throw new Error('VERCEL_URL environment variable is not set.');
+      }
+      const baseUrl = `https://${process.env.VERCEL_URL}`;
+      console.log('🌐 Using base URL for internal API calls:', baseUrl);
+      
+      const adminResponse = await fetch(`${baseUrl}/api/admin`);
       console.log('📡 Admin API response status:', adminResponse.status);
       
       if (adminResponse.ok) {
@@ -350,9 +356,9 @@ export async function POST(request: Request) {
               hasBody: !!emailPayload.emailBody
             });
             
-            // Send email notification using relative URL
+            // Send email notification using the full Vercel deployment URL
             console.log('📧 Calling send-notification API...');
-            const emailResponse = await fetch('/api/send-notification', {
+            const emailResponse = await fetch(`${baseUrl}/api/send-notification`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
