@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { Readable } from 'stream';
 
 // Helper function to properly format the private key
 function formatPrivateKey(key: string | undefined): string | undefined {
@@ -211,23 +212,137 @@ export async function POST(request: Request) {
       });
     }
 
-    // Write Images tab
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: newSheetId,
-      range: 'Images!A2:G2',
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [
-          [
+    // Write Images tab - handle multiple files
+    const imageRows = [];
+    
+    // Upload icon files and create rows
+    if (Array.isArray(formData.iconFiles) && formData.iconFiles.length > 0) {
+      for (const file of formData.iconFiles) {
+        try {
+          // Upload file to Google Drive
+          const fileBuffer = Buffer.from(await file.arrayBuffer());
+          const fileStream = new Readable();
+          fileStream.push(fileBuffer);
+          fileStream.push(null);
+
+          const fileMetadata = {
+            name: file.name,
+            parents: [targetFolderId],
+            mimeType: file.type,
+          };
+
+          const media = {
+            mimeType: file.type,
+            body: fileStream,
+          };
+
+          const uploadedFile = await drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id,name,webViewLink',
+            supportsAllDrives: true,
+          });
+
+          // Add row for this icon file
+          imageRows.push([
             formData.flourishClientName || '',
             formData.appName || '',
             formData.geo || '',
-            formData.iconImageName || '',
-            formData.iconImageLink || '',
-            formData.fillImageName || '',
-            formData.fillImageLink || ''
-          ]
-        ]
+            uploadedFile.data.name || '',
+            uploadedFile.data.webViewLink || '',
+            '', // Empty fill image name
+            ''  // Empty fill image link
+          ]);
+        } catch (uploadError: any) {
+          console.error('Error uploading icon file:', uploadError);
+          // Add row with error information
+          imageRows.push([
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            file.name,
+            'Upload failed',
+            '', // Empty fill image name
+            ''  // Empty fill image link
+          ]);
+        }
+      }
+    }
+
+    // Upload fill files and create rows
+    if (Array.isArray(formData.fillFiles) && formData.fillFiles.length > 0) {
+      for (const file of formData.fillFiles) {
+        try {
+          // Upload file to Google Drive
+          const fileBuffer = Buffer.from(await file.arrayBuffer());
+          const fileStream = new Readable();
+          fileStream.push(fileBuffer);
+          fileStream.push(null);
+
+          const fileMetadata = {
+            name: file.name,
+            parents: [targetFolderId],
+            mimeType: file.type,
+          };
+
+          const media = {
+            mimeType: file.type,
+            body: fileStream,
+          };
+
+          const uploadedFile = await drive.files.create({
+            requestBody: fileMetadata,
+            media: media,
+            fields: 'id,name,webViewLink',
+            supportsAllDrives: true,
+          });
+
+          // Add row for this fill file
+          imageRows.push([
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            '', // Empty icon image name
+            '', // Empty icon image link
+            uploadedFile.data.name || '',
+            uploadedFile.data.webViewLink || ''
+          ]);
+        } catch (uploadError: any) {
+          console.error('Error uploading fill file:', uploadError);
+          // Add row with error information
+          imageRows.push([
+            formData.flourishClientName || '',
+            formData.appName || '',
+            formData.geo || '',
+            '', // Empty icon image name
+            '', // Empty icon image link
+            file.name,
+            'Upload failed'
+          ]);
+        }
+      }
+    }
+
+    // If no files were uploaded, add a default row
+    if (imageRows.length === 0) {
+      imageRows.push([
+        formData.flourishClientName || '',
+        formData.appName || '',
+        formData.geo || '',
+        formData.iconImageName || '',
+        formData.iconImageLink || '',
+        formData.fillImageName || '',
+        formData.fillImageLink || ''
+      ]);
+    }
+
+    // Write all image rows to the sheet
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: newSheetId,
+      range: `Images!A2:G${imageRows.length + 1}`,
+      valueInputOption: 'RAW',
+      requestBody: {
+        values: imageRows
       }
     });
 

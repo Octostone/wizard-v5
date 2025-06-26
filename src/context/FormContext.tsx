@@ -66,6 +66,11 @@ export type FormState = {
   iconImageLink?: string;
   fillImageName?: string;
   fillImageLink?: string;
+  // Multiple file upload fields
+  iconFiles?: File[];
+  fillFiles?: File[];
+  iconImageNames?: string;
+  fillImageNames?: string;
   // Submission fields
   outputFileName?: string;
   targetFolderId?: string;
@@ -120,6 +125,11 @@ const defaultState: FormState = {
   iconImageLink: "",
   fillImageName: "",
   fillImageLink: "",
+  // Multiple file upload fields
+  iconFiles: [],
+  fillFiles: [],
+  iconImageNames: "",
+  fillImageNames: "",
   // Submission fields
   outputFileName: "",
   targetFolderId: ""

@@ -41,66 +41,13 @@ const checkImageDimensions = (file: File, expectedDimensions: { width: number; h
   });
 };
 
-// Function to upload file to Google Drive
-const uploadFileToDrive = async (file: File, targetFolderId: string): Promise<{ success: boolean; fileId?: string; webViewLink?: string; error?: string }> => {
-  try {
-    console.log('🔄 Starting file upload...');
-    console.log('File:', file.name, 'Size:', file.size, 'Type:', file.type);
-    console.log('Target folder ID:', targetFolderId);
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('targetFolderId', targetFolderId);
-
-    const response = await fetch('/api/upload-file', {
-      method: 'POST',
-      body: formData,
-    });
-
-    console.log('📡 Response status:', response.status);
-    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
-
-    const data = await response.json();
-    console.log('📡 Response data:', data);
-
-    if (response.ok && data.success) {
-      console.log('✅ Upload successful');
-      return {
-        success: true,
-        fileId: data.fileId,
-        webViewLink: data.webViewLink,
-      };
-    } else {
-      console.error('❌ Upload failed:', data);
-      // Create a more detailed error message
-      let errorMessage = data.error || 'Upload failed';
-      if (data.details) {
-        errorMessage += `: ${data.details}`;
-      }
-      if (data.code) {
-        errorMessage += ` (Code: ${data.code})`;
-      }
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
-  } catch (error) {
-    console.error('❌ Network error during upload:', error);
-    return {
-      success: false,
-      error: 'Network error during upload',
-    };
-  }
-};
-
 export default function AddImages() {
   const { form, setField } = useFormContext();
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [iconError, setIconError] = useState<string>("");
   const [fillError, setFillError] = useState<string>("");
-  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
-  const [isUploadingFill, setIsUploadingFill] = useState(false);
+  const [iconFiles, setIconFiles] = useState<File[]>([]);
+  const [fillFiles, setFillFiles] = useState<File[]>([]);
   const router = useRouter();
   const pathname = usePathname();
   const iconInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +93,7 @@ export default function AddImages() {
     return errors;
   };
 
-  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setIconError("");
     const file = e.target.files?.[0];
     if (!file) return;
@@ -154,8 +101,6 @@ export default function AddImages() {
     const errors = validateFile(file);
     if (errors.length > 0) {
       setIconError(errors.join(". "));
-      setField("iconImageName", "");
-      setField("iconImageLink", "");
       return;
     }
 
@@ -163,36 +108,20 @@ export default function AddImages() {
     const isValidDimensions = await checkImageDimensions(file, ICON_DIMENSIONS);
     if (!isValidDimensions) {
       setIconError(`Image must be exactly ${ICON_DIMENSIONS.width}x${ICON_DIMENSIONS.height} pixels`);
-      setField("iconImageName", "");
-      setField("iconImageLink", "");
       return;
     }
 
-    // Check if target folder is set
-    if (!form.targetFolderId) {
-      setIconError("Please set the target folder on the home page first");
-      setField("iconImageName", "");
-      setField("iconImageLink", "");
-      return;
-    }
-
-    // Upload file to Google Drive
-    setIsUploadingIcon(true);
-    const uploadResult = await uploadFileToDrive(file, form.targetFolderId);
-    setIsUploadingIcon(false);
-
-    if (uploadResult.success && uploadResult.webViewLink) {
-      setField("iconImageName", file.name);
-      setField("iconImageLink", uploadResult.webViewLink);
-      setIconError("");
-    } else {
-      setIconError(uploadResult.error || "Upload failed");
-      setField("iconImageName", "");
-      setField("iconImageLink", "");
+    // Add file to the list
+    setIconFiles(prev => [...prev, file]);
+    setIconError("");
+    
+    // Clear the input so the same file can be selected again if needed
+    if (iconInputRef.current) {
+      iconInputRef.current.value = '';
     }
   };
 
-  const handleFillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFillFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setFillError("");
     const file = e.target.files?.[0];
     if (!file) return;
@@ -200,8 +129,6 @@ export default function AddImages() {
     const errors = validateFile(file);
     if (errors.length > 0) {
       setFillError(errors.join(". "));
-      setField("fillImageName", "");
-      setField("fillImageLink", "");
       return;
     }
 
@@ -209,34 +136,34 @@ export default function AddImages() {
     const isValidDimensions = await checkImageDimensions(file, FILL_DIMENSIONS);
     if (!isValidDimensions) {
       setFillError(`Image must be exactly ${FILL_DIMENSIONS.width}x${FILL_DIMENSIONS.height} pixels`);
-      setField("fillImageName", "");
-      setField("fillImageLink", "");
       return;
     }
 
-    // Check if target folder is set
-    if (!form.targetFolderId) {
-      setFillError("Please set the target folder on the home page first");
-      setField("fillImageName", "");
-      setField("fillImageLink", "");
-      return;
-    }
-
-    // Upload file to Google Drive
-    setIsUploadingFill(true);
-    const uploadResult = await uploadFileToDrive(file, form.targetFolderId);
-    setIsUploadingFill(false);
-
-    if (uploadResult.success && uploadResult.webViewLink) {
-      setField("fillImageName", file.name);
-      setField("fillImageLink", uploadResult.webViewLink);
-      setFillError("");
-    } else {
-      setFillError(uploadResult.error || "Upload failed");
-      setField("fillImageName", "");
-      setField("fillImageLink", "");
+    // Add file to the list
+    setFillFiles(prev => [...prev, file]);
+    setFillError("");
+    
+    // Clear the input so the same file can be selected again if needed
+    if (fillInputRef.current) {
+      fillInputRef.current.value = '';
     }
   };
+
+  const removeIconFile = (index: number) => {
+    setIconFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeFillFile = (index: number) => {
+    setFillFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Update form context with file information for Google Sheets
+  useEffect(() => {
+    setField("iconFiles", iconFiles);
+    setField("fillFiles", fillFiles);
+    setField("iconImageNames", iconFiles.map(f => f.name).join(", "));
+    setField("fillImageNames", fillFiles.map(f => f.name).join(", "));
+  }, [iconFiles, fillFiles, setField]);
 
   return (
     <div className={styles.page}>
@@ -289,28 +216,64 @@ export default function AddImages() {
               type="button"
               style={{ 
                 padding: '8px 16px', 
-                background: isUploadingIcon ? '#ccc' : '#1976d2', 
+                background: '#1976d2', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: 4, 
-                cursor: isUploadingIcon ? 'not-allowed' : 'pointer', 
+                cursor: 'pointer', 
                 fontWeight: 500 
               }}
               onClick={() => iconInputRef.current?.click()}
-              disabled={isUploadingIcon}
             >
-              {isUploadingIcon ? 'Uploading...' : 'Choose File'}
+              {iconFiles.length === 0 ? 'Choose File' : 'Add Another File'}
             </button>
             <input
               ref={iconInputRef}
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
-              onChange={handleIconUpload}
+              onChange={handleIconFileSelect}
             />
-            <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
-              {form.iconImageName || 'No file chosen'}
-            </span>
+            {/* Display selected icon files */}
+            {iconFiles.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: 4 }}>Selected files:</div>
+                {iconFiles.map((file, index) => (
+                  <div key={index} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '4px 8px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: 4,
+                    marginBottom: 4
+                  }}>
+                    <span style={{ color: '#111', fontWeight: 500, fontSize: 14 }}>
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeIconFile(index)}
+                      style={{
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             {iconError && (
               <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: 4 }}>
                 {iconError}
@@ -324,28 +287,64 @@ export default function AddImages() {
               type="button"
               style={{ 
                 padding: '8px 16px', 
-                background: isUploadingFill ? '#ccc' : '#1976d2', 
+                background: '#1976d2', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: 4, 
-                cursor: isUploadingFill ? 'not-allowed' : 'pointer', 
+                cursor: 'pointer', 
                 fontWeight: 500 
               }}
               onClick={() => fillInputRef.current?.click()}
-              disabled={isUploadingFill}
             >
-              {isUploadingFill ? 'Uploading...' : 'Choose File'}
+              {fillFiles.length === 0 ? 'Choose File' : 'Add Another File'}
             </button>
             <input
               ref={fillInputRef}
               type="file"
               accept="image/*"
               style={{ display: 'none' }}
-              onChange={handleFillUpload}
+              onChange={handleFillFileSelect}
             />
-            <span style={{ color: '#111', fontWeight: 500, fontSize: 15, marginLeft: 8 }}>
-              {form.fillImageName || 'No file chosen'}
-            </span>
+            {/* Display selected fill files */}
+            {fillFiles.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                <div style={{ fontSize: '0.875rem', color: '#666', marginBottom: 4 }}>Selected files:</div>
+                {fillFiles.map((file, index) => (
+                  <div key={index} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    padding: '4px 8px',
+                    backgroundColor: '#f5f5f5',
+                    borderRadius: 4,
+                    marginBottom: 4
+                  }}>
+                    <span style={{ color: '#111', fontWeight: 500, fontSize: 14 }}>
+                      {file.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeFillFile(index)}
+                      style={{
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 20,
+                        height: 20,
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             {fillError && (
               <div style={{ color: '#d32f2f', fontSize: '0.875rem', marginTop: 4 }}>
                 {fillError}
