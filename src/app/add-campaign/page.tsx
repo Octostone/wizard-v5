@@ -20,7 +20,7 @@ export default function AddCampaign() {
   const [carouselSpotlightOptions, setCarouselSpotlightOptions] = useState<string[]>(["Carousel", "Spotlight"]);
   const router = useRouter();
   const pathname = usePathname();
-  const [errors, setErrors] = useState<{ flourishClientName?: string; dailyBudget?: string }>({});
+  const [errors, setErrors] = useState<{ flourishClientName?: string; dailyBudget?: string; clientCampaignName?: string; roas?: { [key: string]: string } }>({});
   const [clickUrl, setClickUrl] = useState(form.clickUrl || "");
   const clickUrlRef = useRef<HTMLTextAreaElement>(null);
 
@@ -97,15 +97,51 @@ export default function AddCampaign() {
     }
   };
 
-  // Handle client campaign name
+  // Handle client campaign name with validation
   const handleClientCampaignName = (value: string) => {
     setField("clientCampaignName", value);
+    
+    // Check for spaces
+    if (/\s/.test(value)) {
+      setErrors(prev => ({ ...prev, clientCampaignName: "No spaces allowed" }));
+    }
+    // Check for line breaks
+    else if (/[\r\n]/.test(value)) {
+      setErrors(prev => ({ ...prev, clientCampaignName: "No line breaks allowed" }));
+    }
+    else {
+      setErrors(prev => ({ ...prev, clientCampaignName: undefined }));
+    }
   };
 
-  // Handle ROAS changes
+  // Handle ROAS changes with validation
   const handleRoasChange = (field: "D7" | "D14" | "D30" | "D60" | "D90" | "D180", value: string) => {
-    const numericValue = value.replace(/[^0-9.]/g, '');
+    // Only allow numeric values with up to one decimal point
+    const numericValue = value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1').replace(/^(\d*\.?\d{0,1}).*$/, '$1');
     setField(field, numericValue);
+    
+    // Validate ROAS progression
+    validateRoasProgression();
+  };
+
+  // Validate ROAS progression
+  const validateRoasProgression = () => {
+    const roasFields: ("D7" | "D14" | "D30" | "D60" | "D90" | "D180")[] = ['D7', 'D14', 'D30', 'D60', 'D90', 'D180'];
+    const roasErrors: { [key: string]: string } = {};
+    
+    for (let i = 1; i < roasFields.length; i++) {
+      const currentField = roasFields[i];
+      const previousField = roasFields[i - 1];
+      
+      const currentValue = parseFloat(form[currentField] || '0');
+      const previousValue = parseFloat(form[previousField] || '0');
+      
+      if (currentValue > 0 && previousValue > 0 && currentValue < previousValue) {
+        roasErrors[currentField] = `Value must be equal to or greater than ${previousField} (${previousValue})`;
+      }
+    }
+    
+    setErrors(prev => ({ ...prev, roas: roasErrors }));
   };
 
   // Validation for Flourish Client Name
@@ -176,7 +212,7 @@ export default function AddCampaign() {
               onChange={e => setField("geo", e.target.value)}
               required
             >
-              <option value="" disabled>Geo for Campaign*</option>
+              <option value="" disabled>Geo for Campaign</option>
               {geoOptions.map((geo) => (
                 <option key={geo} value={geo}>{geo}</option>
               ))}
@@ -192,8 +228,10 @@ export default function AddCampaign() {
               value={form.clientCampaignName || ""}
               onChange={e => handleClientCampaignName(e.target.value)}
               placeholder=" "
+              style={errors.clientCampaignName ? { borderColor: 'red' } : {}}
             />
             <label className={styles.floatingLabel}>Client Campaign Name</label>
+            {errors.clientCampaignName && <div style={{ color: 'red', fontSize: 13, marginTop: 4 }}>{errors.clientCampaignName}</div>}
           </div>
 
           {/* Monthly Budget */}
@@ -223,7 +261,7 @@ export default function AddCampaign() {
             {errors.dailyBudget && <div style={{ color: 'red', fontSize: 13 }}>{errors.dailyBudget}</div>}
           </div>
 
-          {/* Pricing Model */}
+          {/* Offer Type (formerly Pricing Model) */}
           <div className={styles.formGroup}>
             <select
               className={styles.floatingInput}
@@ -231,12 +269,12 @@ export default function AddCampaign() {
               onChange={e => setField("pricingModel", e.target.value)}
               required
             >
-              <option value="" disabled>Pricing Model</option>
+              <option value="" disabled>Select Type</option>
               {pricingModels.map((model) => (
                 <option key={model} value={model}>{model}</option>
               ))}
             </select>
-            <label className={styles.floatingLabel}>Pricing Model</label>
+            <label className={styles.floatingLabel}>Offer Type</label>
           </div>
 
           {/* Carousel/Spotlight */}
@@ -296,8 +334,10 @@ export default function AddCampaign() {
                   onChange={e => handleRoasChange(field, e.target.value)}
                   placeholder=" "
                   inputMode="numeric"
+                  style={errors.roas?.[field] ? { borderColor: 'red' } : {}}
                 />
                 <label className={styles.floatingLabel}>{field}</label>
+                {errors.roas?.[field] && <div style={{ color: 'red', fontSize: 11, marginTop: 2 }}>{errors.roas[field]}</div>}
               </div>
             ))}
           </div>
