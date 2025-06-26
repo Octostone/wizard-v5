@@ -55,7 +55,6 @@ export default function AddOffers() {
   const pathname = usePathname();
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [genderOptions, setGenderOptions] = useState<string[]>(["Male", "Female", "Any"]);
-  const [offers, setOffers] = useState<Offer[]>(form.offers.length > 0 ? form.offers : [initialOffer(form.geo)]);
   const [errors, setErrors] = useState<OfferErrors[]>([]);
 
   const progressSteps = [
@@ -84,17 +83,20 @@ export default function AddOffers() {
       });
   }, []);
 
+  // Initialize offers if empty
+  useEffect(() => {
+    if (form.offers.length === 0) {
+      setField('offers', [initialOffer(form.geo)]);
+    }
+  }, [form.offers.length, form.geo, setField]);
+
   // Propagate geo from previous page
   useEffect(() => {
-    if (offers.length === 1 && !offers[0].geo && form.geo) {
-      setOffers([{ ...offers[0], geo: form.geo }]);
+    if (form.offers.length === 1 && !form.offers[0].geo && form.geo) {
+      const updatedOffers = [{ ...form.offers[0], geo: form.geo }];
+      setField('offers', updatedOffers);
     }
-  }, [form.geo, offers]);
-
-  // Update form when offers change
-  useEffect(() => {
-    setField('offers', offers);
-  }, [offers, setField]);
+  }, [form.geo, form.offers, setField]);
 
   // Validation
   const validateRow = (row: Offer): OfferErrors => {
@@ -125,38 +127,41 @@ export default function AddOffers() {
 
   // Handle field change
   const handleChange = (idx: number, field: keyof Offer, value: string) => {
-    const updated = offers.map((row, i) =>
+    const updated = form.offers.map((row, i) =>
       i === idx ? { ...row, [field]: value } : row
     );
-    setOffers(updated);
+    setField("offers", updated);
     // Validate
     const rowErrors = validateRow(updated[idx]);
     setErrors(errors.map((e, i) => (i === idx ? rowErrors : e)));
-    setField("offers", updated);
   };
 
   // Add row
   const handleAddRow = () => {
-    setOffers([...offers, initialOffer(form.geo)]);
+    const newOffers = [...form.offers, initialOffer(form.geo)];
+    setField("offers", newOffers);
     setErrors([...errors, {}]);
   };
 
   // Delete row
   const handleDeleteRow = (idx: number) => {
-    if (offers.length === 1) return;
-    setOffers(offers.filter((_, i) => i !== idx));
+    if (form.offers.length === 1) return;
+    const newOffers = form.offers.filter((_, i) => i !== idx);
+    setField("offers", newOffers);
     setErrors(errors.filter((_, i) => i !== idx));
   };
 
-  // Drag and drop
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }));
+  // Drag and drop - Fixed sensor configuration
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: { distance: 10 }
+  }));
+  
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (active && over && active.id !== over.id) {
-      const oldIndex = offers.findIndex(item => item.id === active.id);
-      const newIndex = offers.findIndex(item => item.id === over.id);
-      const reordered = arrayMove(offers, oldIndex, newIndex);
-      setOffers(reordered);
+      const oldIndex = form.offers.findIndex(item => item.id === active.id);
+      const newIndex = form.offers.findIndex(item => item.id === over.id);
+      const reordered = arrayMove(form.offers, oldIndex, newIndex);
       setField("offers", reordered);
       setErrors(arrayMove(errors, oldIndex, newIndex));
     }
@@ -216,10 +221,10 @@ export default function AddOffers() {
         </div>
         {/* Rows */}
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={offers.map(row => row.id)} strategy={verticalListSortingStrategy}>
-            {offers.map((row, idx) => (
+          <SortableContext items={form.offers.map(row => row.id)} strategy={verticalListSortingStrategy}>
+            {form.offers.map((row, idx) => (
               <div key={row.id} className={styles.eventRow}>
-                <div className={styles.eventDragHandle} {...(offers.length > 1 ? { tabIndex: 0 } : {})}>≡</div>
+                <div className={styles.eventDragHandle} {...(form.offers.length > 1 ? { tabIndex: 0 } : {})}>≡</div>
                 {/* Geo */}
                 <div className={styles.eventField} style={{ width: geoWidth }}>
                   <select
@@ -357,7 +362,7 @@ export default function AddOffers() {
                     type="button"
                     className={styles.eventDeleteButton}
                     onClick={() => handleDeleteRow(idx)}
-                    disabled={offers.length === 1}
+                    disabled={form.offers.length === 1}
                     aria-label="Delete row"
                   >
                     🗑️
