@@ -287,7 +287,7 @@ export default function AddCampaign() {
         <div className={styles.roasContainer}>
           <h2 className={styles.title} style={{ fontSize: 22, marginBottom: 12 }}>ROAS Targets</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {(['D7', 'D14', 'D30', 'D60', 'D90', 'D180'] as (keyof typeof form)[]).map((field) => (
+            {(['D7', 'D14', 'D30', 'D60', 'D90', 'D180'] as const).map((field) => (
               <div className={styles.formGroup} key={field}>
                 <input
                   className={styles.floatingInput}
