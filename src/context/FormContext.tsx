@@ -71,6 +71,13 @@ export type FormState = {
   fillFiles?: File[];
   iconImageNames?: string;
   fillImageNames?: string;
+  // Uploaded files information
+  uploadedFiles?: Array<{
+    type: 'icon' | 'fill';
+    name: string;
+    webViewLink: string;
+    fileId: string | null;
+  }>;
   // Submission fields
   outputFileName?: string;
   targetFolderId?: string;
@@ -130,6 +137,8 @@ const defaultState: FormState = {
   fillFiles: [],
   iconImageNames: "",
   fillImageNames: "",
+  // Uploaded files information
+  uploadedFiles: [],
   // Submission fields
   outputFileName: "",
   targetFolderId: ""

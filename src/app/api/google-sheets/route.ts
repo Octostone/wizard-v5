@@ -215,112 +215,36 @@ export async function POST(request: Request) {
     // Write Images tab - handle multiple files
     const imageRows = [];
     
-    // Upload icon files and create rows
-    if (Array.isArray(formData.iconFiles) && formData.iconFiles.length > 0) {
-      for (const file of formData.iconFiles) {
-        try {
-          // Upload file to Google Drive
-          const fileBuffer = Buffer.from(await file.arrayBuffer());
-          const fileStream = new Readable();
-          fileStream.push(fileBuffer);
-          fileStream.push(null);
-
-          const fileMetadata = {
-            name: file.name,
-            parents: [targetFolderId],
-            mimeType: file.type,
-          };
-
-          const media = {
-            mimeType: file.type,
-            body: fileStream,
-          };
-
-          const uploadedFile = await drive.files.create({
-            requestBody: fileMetadata,
-            media: media,
-            fields: 'id,name,webViewLink',
-            supportsAllDrives: true,
-          });
-
-          // Add row for this icon file
-          imageRows.push([
-            formData.flourishClientName || '',
-            formData.appName || '',
-            formData.geo || '',
-            uploadedFile.data.name || '',
-            uploadedFile.data.webViewLink || '',
-            '', // Empty fill image name
-            ''  // Empty fill image link
-          ]);
-        } catch (uploadError: any) {
-          console.error('Error uploading icon file:', uploadError);
-          // Add row with error information
-          imageRows.push([
-            formData.flourishClientName || '',
-            formData.appName || '',
-            formData.geo || '',
-            file.name,
-            'Upload failed',
-            '', // Empty fill image name
-            ''  // Empty fill image link
-          ]);
-        }
-      }
-    }
-
-    // Upload fill files and create rows
-    if (Array.isArray(formData.fillFiles) && formData.fillFiles.length > 0) {
-      for (const file of formData.fillFiles) {
-        try {
-          // Upload file to Google Drive
-          const fileBuffer = Buffer.from(await file.arrayBuffer());
-          const fileStream = new Readable();
-          fileStream.push(fileBuffer);
-          fileStream.push(null);
-
-          const fileMetadata = {
-            name: file.name,
-            parents: [targetFolderId],
-            mimeType: file.type,
-          };
-
-          const media = {
-            mimeType: file.type,
-            body: fileStream,
-          };
-
-          const uploadedFile = await drive.files.create({
-            requestBody: fileMetadata,
-            media: media,
-            fields: 'id,name,webViewLink',
-            supportsAllDrives: true,
-          });
-
-          // Add row for this fill file
-          imageRows.push([
-            formData.flourishClientName || '',
-            formData.appName || '',
-            formData.geo || '',
-            '', // Empty icon image name
-            '', // Empty icon image link
-            uploadedFile.data.name || '',
-            uploadedFile.data.webViewLink || ''
-          ]);
-        } catch (uploadError: any) {
-          console.error('Error uploading fill file:', uploadError);
-          // Add row with error information
-          imageRows.push([
-            formData.flourishClientName || '',
-            formData.appName || '',
-            formData.geo || '',
-            '', // Empty icon image name
-            '', // Empty icon image link
-            file.name,
-            'Upload failed'
-          ]);
-        }
-      }
+    // Process uploaded icon files
+    if (Array.isArray(formData.uploadedFiles)) {
+      const iconFiles = formData.uploadedFiles.filter((file: any) => file.type === 'icon');
+      const fillFiles = formData.uploadedFiles.filter((file: any) => file.type === 'fill');
+      
+      // Create rows for icon files
+      iconFiles.forEach((file: any) => {
+        imageRows.push([
+          formData.flourishClientName || '',
+          formData.appName || '',
+          formData.geo || '',
+          file.name || '',
+          file.webViewLink || '',
+          '', // Empty fill image name
+          ''  // Empty fill image link
+        ]);
+      });
+      
+      // Create rows for fill files
+      fillFiles.forEach((file: any) => {
+        imageRows.push([
+          formData.flourishClientName || '',
+          formData.appName || '',
+          formData.geo || '',
+          '', // Empty icon image name
+          '', // Empty icon image link
+          file.name || '',
+          file.webViewLink || ''
+        ]);
+      });
     }
 
     // If no files were uploaded, add a default row

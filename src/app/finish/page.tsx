@@ -73,6 +73,79 @@ export default function Finish() {
     setErrorMessage('');
 
     try {
+      // First, upload all files to Google Drive
+      const uploadedFiles = [];
+      
+      // Upload icon files
+      if (form.iconFiles && form.iconFiles.length > 0) {
+        for (const file of form.iconFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('targetFolderId', form.targetFolderId);
+          
+          const uploadResponse = await fetch('/api/upload-file', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            uploadedFiles.push({
+              type: 'icon',
+              name: file.name,
+              webViewLink: uploadData.webViewLink,
+              fileId: uploadData.fileId
+            });
+          } else {
+            console.error('Failed to upload icon file:', file.name);
+            uploadedFiles.push({
+              type: 'icon',
+              name: file.name,
+              webViewLink: 'Upload failed',
+              fileId: null
+            });
+          }
+        }
+      }
+      
+      // Upload fill files
+      if (form.fillFiles && form.fillFiles.length > 0) {
+        for (const file of form.fillFiles) {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('targetFolderId', form.targetFolderId);
+          
+          const uploadResponse = await fetch('/api/upload-file', {
+            method: 'POST',
+            body: formData,
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadData = await uploadResponse.json();
+            uploadedFiles.push({
+              type: 'fill',
+              name: file.name,
+              webViewLink: uploadData.webViewLink,
+              fileId: uploadData.fileId
+            });
+          } else {
+            console.error('Failed to upload fill file:', file.name);
+            uploadedFiles.push({
+              type: 'fill',
+              name: file.name,
+              webViewLink: 'Upload failed',
+              fileId: null
+            });
+          }
+        }
+      }
+
+      // Now send the form data with uploaded file information
+      const formDataToSend = {
+        ...form,
+        uploadedFiles: uploadedFiles
+      };
+
       const response = await fetch('/api/google-sheets', {
         method: 'POST',
         headers: {
@@ -81,7 +154,7 @@ export default function Finish() {
         body: JSON.stringify({
           outputFileName: form.outputFileName,
           targetFolderId: form.targetFolderId,
-          formData: form
+          formData: formDataToSend
         }),
       });
 
