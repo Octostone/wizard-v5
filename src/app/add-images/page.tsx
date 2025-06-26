@@ -41,11 +41,47 @@ const checkImageDimensions = (file: File, expectedDimensions: { width: number; h
   });
 };
 
+// Function to upload file to Google Drive
+const uploadFileToDrive = async (file: File, targetFolderId: string): Promise<{ success: boolean; fileId?: string; webViewLink?: string; error?: string }> => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('targetFolderId', targetFolderId);
+
+    const response = await fetch('/api/upload-file', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      return {
+        success: true,
+        fileId: data.fileId,
+        webViewLink: data.webViewLink,
+      };
+    } else {
+      return {
+        success: false,
+        error: data.error || 'Upload failed',
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      error: 'Network error during upload',
+    };
+  }
+};
+
 export default function AddImages() {
   const { form, setField } = useFormContext();
   const [geoOptions, setGeoOptions] = useState<string[]>([]);
   const [iconError, setIconError] = useState<string>("");
   const [fillError, setFillError] = useState<string>("");
+  const [isUploadingIcon, setIsUploadingIcon] = useState(false);
+  const [isUploadingFill, setIsUploadingFill] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
   const iconInputRef = useRef<HTMLInputElement>(null);
@@ -113,11 +149,28 @@ export default function AddImages() {
       return;
     }
 
-    // Store the file name in form context
-    setField("iconImageName", file.name);
-    // Generate a placeholder link for Google Drive folder
-    setField("iconImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
-    setIconError("");
+    // Check if target folder is set
+    if (!form.targetFolderId) {
+      setIconError("Please set the target folder on the home page first");
+      setField("iconImageName", "");
+      setField("iconImageLink", "");
+      return;
+    }
+
+    // Upload file to Google Drive
+    setIsUploadingIcon(true);
+    const uploadResult = await uploadFileToDrive(file, form.targetFolderId);
+    setIsUploadingIcon(false);
+
+    if (uploadResult.success && uploadResult.webViewLink) {
+      setField("iconImageName", file.name);
+      setField("iconImageLink", uploadResult.webViewLink);
+      setIconError("");
+    } else {
+      setIconError(uploadResult.error || "Upload failed");
+      setField("iconImageName", "");
+      setField("iconImageLink", "");
+    }
   };
 
   const handleFillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,11 +195,28 @@ export default function AddImages() {
       return;
     }
 
-    // Store the file name in form context
-    setField("fillImageName", file.name);
-    // Generate a placeholder link for Google Drive folder
-    setField("fillImageLink", "https://drive.google.com/drive/folders/[FOLDER_ID]");
-    setFillError("");
+    // Check if target folder is set
+    if (!form.targetFolderId) {
+      setFillError("Please set the target folder on the home page first");
+      setField("fillImageName", "");
+      setField("fillImageLink", "");
+      return;
+    }
+
+    // Upload file to Google Drive
+    setIsUploadingFill(true);
+    const uploadResult = await uploadFileToDrive(file, form.targetFolderId);
+    setIsUploadingFill(false);
+
+    if (uploadResult.success && uploadResult.webViewLink) {
+      setField("fillImageName", file.name);
+      setField("fillImageLink", uploadResult.webViewLink);
+      setFillError("");
+    } else {
+      setFillError(uploadResult.error || "Upload failed");
+      setField("fillImageName", "");
+      setField("fillImageLink", "");
+    }
   };
 
   return (
@@ -198,10 +268,19 @@ export default function AddImages() {
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Icon (Square)</label>
             <button
               type="button"
-              style={{ padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 500 }}
+              style={{ 
+                padding: '8px 16px', 
+                background: isUploadingIcon ? '#ccc' : '#1976d2', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: 4, 
+                cursor: isUploadingIcon ? 'not-allowed' : 'pointer', 
+                fontWeight: 500 
+              }}
               onClick={() => iconInputRef.current?.click()}
+              disabled={isUploadingIcon}
             >
-              Choose File
+              {isUploadingIcon ? 'Uploading...' : 'Choose File'}
             </button>
             <input
               ref={iconInputRef}
@@ -224,10 +303,19 @@ export default function AddImages() {
             <label className={styles.floatingLabel} style={{ top: 0, left: 0, fontSize: '1rem', position: 'static', marginBottom: 4 }}>Upload Fill Image (Rectangle)</label>
             <button
               type="button"
-              style={{ padding: '8px 16px', background: '#1976d2', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 500 }}
+              style={{ 
+                padding: '8px 16px', 
+                background: isUploadingFill ? '#ccc' : '#1976d2', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: 4, 
+                cursor: isUploadingFill ? 'not-allowed' : 'pointer', 
+                fontWeight: 500 
+              }}
               onClick={() => fillInputRef.current?.click()}
+              disabled={isUploadingFill}
             >
-              Choose File
+              {isUploadingFill ? 'Uploading...' : 'Choose File'}
             </button>
             <input
               ref={fillInputRef}
