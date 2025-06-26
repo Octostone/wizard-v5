@@ -80,10 +80,37 @@ export async function POST(request: Request) {
     });
 
     console.log('🔐 Authorizing Google API...');
-    await auth.authorize();
-    console.log('✅ Google API authorization successful');
+    try {
+      await auth.authorize();
+      console.log('✅ Google API authorization successful');
+    } catch (authError: any) {
+      console.error('❌ Google API authorization failed:', authError);
+      return NextResponse.json({
+        error: 'Google API authentication failed',
+        details: authError.message || 'Failed to authenticate with Google API',
+        code: 'AUTH_ERROR'
+      }, { status: 500 });
+    }
 
     const drive = google.drive({ version: 'v3', auth });
+
+    // Test folder access first
+    console.log('🔍 Testing folder access...');
+    try {
+      await drive.files.get({
+        fileId: targetFolderId,
+        fields: 'id,name',
+        supportsAllDrives: true,
+      });
+      console.log('✅ Folder access confirmed');
+    } catch (folderError: any) {
+      console.error('❌ Folder access failed:', folderError);
+      return NextResponse.json({
+        error: 'Cannot access target folder',
+        details: folderError.message || 'The specified folder does not exist or is not accessible',
+        code: folderError.code || 'FOLDER_ACCESS_ERROR'
+      }, { status: 500 });
+    }
 
     // Upload file to Google Drive
     console.log('📤 Uploading file to Google Drive...');
@@ -132,29 +159,38 @@ export async function POST(request: Request) {
       message: error.message,
       code: error.code,
       status: error.status,
-      response: error.response?.data
+      response: error.response?.data,
+      stack: error.stack
     });
     
     // Provide more specific error messages
     let errorMessage = 'An error occurred during file upload.';
-    let errorDetails = error.message;
+    let errorDetails = error.message || 'Unknown error';
+    let errorCode = error.code || 'UNKNOWN_ERROR';
 
     if (error.code === 403) {
       errorMessage = 'Access denied. Please check folder permissions.';
       errorDetails = 'The service account does not have permission to upload to the specified folder.';
+      errorCode = 'PERMISSION_DENIED';
     } else if (error.code === 404) {
       errorMessage = 'Target folder not found.';
       errorDetails = 'The specified folder ID does not exist or is not accessible.';
+      errorCode = 'FOLDER_NOT_FOUND';
     } else if (error.message?.includes('invalid_grant')) {
       errorMessage = 'Authentication failed.';
       errorDetails = 'Google service account credentials are invalid or expired.';
+      errorCode = 'AUTH_ERROR';
+    } else if (error.message?.includes('quota')) {
+      errorMessage = 'Upload quota exceeded.';
+      errorDetails = 'Google Drive upload quota has been exceeded.';
+      errorCode = 'QUOTA_EXCEEDED';
     }
 
     return NextResponse.json(
       { 
         error: errorMessage,
         details: errorDetails,
-        code: error.code
+        code: errorCode
       }, 
       { status: 500 }
     );

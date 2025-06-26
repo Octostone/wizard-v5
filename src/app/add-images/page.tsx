@@ -72,9 +72,17 @@ const uploadFileToDrive = async (file: File, targetFolderId: string): Promise<{ 
       };
     } else {
       console.error('❌ Upload failed:', data);
+      // Create a more detailed error message
+      let errorMessage = data.error || 'Upload failed';
+      if (data.details) {
+        errorMessage += `: ${data.details}`;
+      }
+      if (data.code) {
+        errorMessage += ` (Code: ${data.code})`;
+      }
       return {
         success: false,
-        error: data.error || data.details || 'Upload failed',
+        error: errorMessage,
       };
     }
   } catch (error) {
