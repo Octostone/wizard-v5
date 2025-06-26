@@ -277,3 +277,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save admin data' }, { status: 500 });
   }
 }
+
+export { getAdminData };

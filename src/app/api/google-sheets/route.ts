@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { Readable } from 'stream';
+import { getAdminData } from '../admin/route';
 
 // Helper function to properly format the private key
 function formatPrivateKey(key: string | undefined): string | undefined {
@@ -289,105 +290,88 @@ export async function POST(request: Request) {
     try {
       // Get admin data to access email templates and settings
       console.log('🔍 Fetching admin data for email configuration...');
+      const adminData = await getAdminData();
+      console.log('📊 Admin data received:', {
+        hasEmailSettings: !!adminData.emailSettings,
+        enableNotifications: adminData.emailSettings?.enableNotifications,
+        accountManagersCount: adminData.accountManagers?.length,
+        accountManagers: adminData.accountManagers?.map((am: any) => ({ name: am.name, hasEmail: !!am.email }))
+      });
       
-      // Always use the full Vercel deployment URL for server-side fetches
-      if (!process.env.VERCEL_URL) {
-        throw new Error('VERCEL_URL environment variable is not set.');
-      }
-      const baseUrl = `https://${process.env.VERCEL_URL}`;
-      console.log('🌐 Using base URL for internal API calls:', baseUrl);
-      
-      const adminResponse = await fetch(`${baseUrl}/api/admin`);
-      console.log('📡 Admin API response status:', adminResponse.status);
-      
-      if (adminResponse.ok) {
-        const adminData = await adminResponse.json();
-        console.log('📊 Admin data received:', {
-          hasEmailSettings: !!adminData.emailSettings,
-          enableNotifications: adminData.emailSettings?.enableNotifications,
-          accountManagersCount: adminData.accountManagers?.length,
-          accountManagers: adminData.accountManagers?.map((am: any) => ({ name: am.name, hasEmail: !!am.email }))
-        });
+      // Check if email notifications are enabled
+      if (adminData.emailSettings?.enableNotifications) {
+        console.log('✅ Email notifications are enabled');
         
-        // Check if email notifications are enabled
-        if (adminData.emailSettings?.enableNotifications) {
-          console.log('✅ Email notifications are enabled');
+        // Find the account manager's email
+        const accountManager = adminData.accountManagers?.find((am: any) => am.name === formData.accountManager);
+        console.log('👤 Looking for account manager:', formData.accountManager);
+        console.log('👤 Found account manager:', accountManager);
+        
+        const accountManagerEmail = accountManager?.email;
+        console.log('📧 Account manager email:', accountManagerEmail);
+        
+        if (accountManagerEmail) {
+          console.log('✅ Account manager email found, preparing email data...');
           
-          // Find the account manager's email
-          const accountManager = adminData.accountManagers?.find((am: any) => am.name === formData.accountManager);
-          console.log('👤 Looking for account manager:', formData.accountManager);
-          console.log('👤 Found account manager:', accountManager);
+          // Prepare form summary
+          const formSummary = `
+            <strong>Client:</strong> ${formData.flourishClientName}<br>
+            <strong>App:</strong> ${formData.appName}<br>
+            <strong>Geo:</strong> ${formData.geo}<br>
+            <strong>Campaign:</strong> ${formData.clientCampaignName}<br>
+            <strong>Images:</strong> ${formData.uploadedFiles?.length || 0} files uploaded
+          `;
           
-          const accountManagerEmail = accountManager?.email;
-          console.log('📧 Account manager email:', accountManagerEmail);
+          // Prepare Google folder URL
+          const googleFolderUrl = `https://drive.google.com/drive/folders/${targetFolderId}`;
           
-          if (accountManagerEmail) {
-            console.log('✅ Account manager email found, preparing email data...');
-            
-            // Prepare form summary
-            const formSummary = `
-              <strong>Client:</strong> ${formData.flourishClientName}<br>
-              <strong>App:</strong> ${formData.appName}<br>
-              <strong>Geo:</strong> ${formData.geo}<br>
-              <strong>Campaign:</strong> ${formData.clientCampaignName}<br>
-              <strong>Images:</strong> ${formData.uploadedFiles?.length || 0} files uploaded
-            `;
-            
-            // Prepare Google folder URL
-            const googleFolderUrl = `https://drive.google.com/drive/folders/${targetFolderId}`;
-            
-            const emailPayload = {
-              accountManagerName: formData.accountManager,
-              accountManagerEmail: accountManagerEmail,
-              clientName: formData.flourishClientName,
-              fileName: outputFileName,
-              googleSheetUrl: copiedFile.data.webViewLink,
-              googleFolderUrl: googleFolderUrl,
-              formSummary: formSummary,
-              additionalRecipients: adminData.emailSettings?.defaultRecipients || [],
-              emailSubject: adminData.emailTemplates?.subject || 'New Campaign Created: {clientName} - {fileName}',
-              emailBody: adminData.emailTemplates?.body || 'A new campaign has been created.'
-            };
-            
-            console.log('📧 Email payload prepared:', {
-              to: accountManagerEmail,
-              additionalRecipients: emailPayload.additionalRecipients,
-              subject: emailPayload.emailSubject,
-              hasBody: !!emailPayload.emailBody
-            });
-            
-            // Send email notification using the full Vercel deployment URL
-            console.log('📧 Calling send-notification API...');
-            const emailResponse = await fetch(`${baseUrl}/api/send-notification`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(emailPayload),
-            });
-            
-            console.log('📡 Send-notification API response status:', emailResponse.status);
-            
-            if (emailResponse.ok) {
-              const emailData = await emailResponse.json();
-              console.log('✅ Email notification sent successfully:', emailData);
-            } else {
-              const errorText = await emailResponse.text();
-              console.error('❌ Failed to send email notification. Status:', emailResponse.status);
-              console.error('❌ Error response:', errorText);
-            }
+          const emailPayload = {
+            accountManagerName: formData.accountManager,
+            accountManagerEmail: accountManagerEmail,
+            clientName: formData.flourishClientName,
+            fileName: outputFileName,
+            googleSheetUrl: copiedFile.data.webViewLink,
+            googleFolderUrl: googleFolderUrl,
+            formSummary: formSummary,
+            additionalRecipients: adminData.emailSettings?.defaultRecipients || [],
+            emailSubject: adminData.emailTemplates?.subject || 'New Campaign Created: {clientName} - {fileName}',
+            emailBody: adminData.emailTemplates?.body || 'A new campaign has been created.'
+          };
+          
+          console.log('📧 Email payload prepared:', {
+            to: accountManagerEmail,
+            additionalRecipients: emailPayload.additionalRecipients,
+            subject: emailPayload.emailSubject,
+            hasBody: !!emailPayload.emailBody
+          });
+          
+          // Send email notification using the full Vercel deployment URL
+          console.log('📧 Calling send-notification API...');
+          const emailResponse = await fetch(`${process.env.VERCEL_URL}/api/send-notification`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailPayload),
+          });
+          
+          console.log('📡 Send-notification API response status:', emailResponse.status);
+          
+          if (emailResponse.ok) {
+            const emailData = await emailResponse.json();
+            console.log('✅ Email notification sent successfully:', emailData);
           } else {
-            console.warn('⚠️ Account manager email not found for:', formData.accountManager);
-            console.warn('⚠️ Available account managers:', adminData.accountManagers?.map((am: any) => `${am.name}: ${am.email || 'NO EMAIL'}`));
+            const errorText = await emailResponse.text();
+            console.error('❌ Failed to send email notification. Status:', emailResponse.status);
+            console.error('❌ Error response:', errorText);
           }
         } else {
-          console.log('ℹ️ Email notifications are disabled in admin settings');
-          console.log('ℹ️ Email settings:', adminData.emailSettings);
+          console.warn('⚠️ Account manager email not found for:', formData.accountManager);
+          console.warn('⚠️ Available account managers:', adminData.accountManagers?.map((am: any) => `${am.name}: ${am.email || 'NO EMAIL'}`));
         }
       } else {
-        const errorText = await adminResponse.text();
-        console.error('❌ Failed to fetch admin data for email notification. Status:', adminResponse.status);
-        console.error('❌ Error response:', errorText);
+        console.log('ℹ️ Email notifications are disabled in admin settings');
+        console.log('ℹ️ Email settings:', adminData.emailSettings);
       }
     } catch (emailError) {
       console.error('❌ Error sending email notification:', emailError);
