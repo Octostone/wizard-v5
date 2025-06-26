@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
+import { Readable } from 'stream';
 
 // Route segment config for file uploads
 export const runtime = 'nodejs';
@@ -9,6 +10,14 @@ export const dynamic = 'force-dynamic';
 function formatPrivateKey(key: string | undefined): string | undefined {
   if (!key) return undefined;
   return key.replace(/\\n/g, '\n').trim();
+}
+
+// Helper function to convert buffer to readable stream
+function bufferToStream(buffer: Buffer): Readable {
+  const readable = new Readable();
+  readable.push(buffer);
+  readable.push(null);
+  return readable;
 }
 
 export async function POST(request: Request) {
@@ -89,7 +98,7 @@ export async function POST(request: Request) {
       }, { status: 500 });
     }
 
-    // Upload test file to Google Drive
+    // Upload test file to Google Drive using stream
     console.log('📤 Uploading test file to Google Drive...');
     console.log('Target folder ID:', targetFolderId);
     console.log('File name:', testFileName);
@@ -100,9 +109,12 @@ export async function POST(request: Request) {
       mimeType: 'image/jpeg',
     };
 
+    // Convert buffer to readable stream to avoid multipart upload issues
+    const fileStream = bufferToStream(testFileContent);
+
     const media = {
       mimeType: 'image/jpeg',
-      body: testFileContent,
+      body: fileStream,
     };
 
     const uploadedFile = await drive.files.create({
