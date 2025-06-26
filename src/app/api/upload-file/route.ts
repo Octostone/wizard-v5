@@ -1,12 +1,9 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
-// Disable body parser for file uploads
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// Route segment config for file uploads
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // Helper function to properly format the private key
 function formatPrivateKey(key: string | undefined): string | undefined {
