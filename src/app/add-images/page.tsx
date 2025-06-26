@@ -44,6 +44,10 @@ const checkImageDimensions = (file: File, expectedDimensions: { width: number; h
 // Function to upload file to Google Drive
 const uploadFileToDrive = async (file: File, targetFolderId: string): Promise<{ success: boolean; fileId?: string; webViewLink?: string; error?: string }> => {
   try {
+    console.log('🔄 Starting file upload...');
+    console.log('File:', file.name, 'Size:', file.size, 'Type:', file.type);
+    console.log('Target folder ID:', targetFolderId);
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('targetFolderId', targetFolderId);
@@ -53,21 +57,28 @@ const uploadFileToDrive = async (file: File, targetFolderId: string): Promise<{ 
       body: formData,
     });
 
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
     const data = await response.json();
+    console.log('📡 Response data:', data);
 
     if (response.ok && data.success) {
+      console.log('✅ Upload successful');
       return {
         success: true,
         fileId: data.fileId,
         webViewLink: data.webViewLink,
       };
     } else {
+      console.error('❌ Upload failed:', data);
       return {
         success: false,
-        error: data.error || 'Upload failed',
+        error: data.error || data.details || 'Upload failed',
       };
     }
   } catch (error) {
+    console.error('❌ Network error during upload:', error);
     return {
       success: false,
       error: 'Network error during upload',
