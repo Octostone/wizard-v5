@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { Readable } from 'stream';
 import { getAdminData } from '../../../utils/adminConfig';
+import { sendEmailNotification } from '@/utils/emailService';
 
 // Helper function to properly format the private key
 function formatPrivateKey(key: string | undefined): string | undefined {
@@ -330,7 +331,7 @@ export async function POST(request: Request) {
             accountManagerEmail: accountManagerEmail,
             clientName: formData.flourishClientName,
             fileName: outputFileName,
-            googleSheetUrl: copiedFile.data.webViewLink,
+            googleSheetUrl: copiedFile.data.webViewLink || `https://docs.google.com/spreadsheets/d/${newSheetId}`,
             googleFolderUrl: googleFolderUrl,
             formSummary: formSummary,
             additionalRecipients: adminData.emailSettings?.defaultRecipients || [],
@@ -345,34 +346,11 @@ export async function POST(request: Request) {
             hasBody: !!emailPayload.emailBody
           });
           
-          // Send email notification using the full Vercel deployment URL
-          console.log('📧 Calling send-notification API...');
+          // Send email notification directly using the utility function
+          console.log('📧 Calling email service utility...');
+          const emailResult = await sendEmailNotification(emailPayload);
           
-          // Construct the base URL with proper protocol
-          const baseUrl = process.env.VERCEL_URL || 'localhost:3000';
-          const protocol = baseUrl.startsWith('localhost') ? 'http://' : 'https://';
-          const apiUrl = `${protocol}${baseUrl}/api/send-notification`;
-          
-          console.log('🔗 Constructed API URL:', apiUrl);
-          
-          const emailResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailPayload),
-          });
-          
-          console.log('📡 Send-notification API response status:', emailResponse.status);
-          
-          if (emailResponse.ok) {
-            const emailData = await emailResponse.json();
-            console.log('✅ Email notification sent successfully:', emailData);
-          } else {
-            const errorText = await emailResponse.text();
-            console.error('❌ Failed to send email notification. Status:', emailResponse.status);
-            console.error('❌ Error response:', errorText);
-          }
+          console.log('✅ Email notification sent successfully:', emailResult);
         } else {
           console.warn('⚠️ Account manager email not found for:', formData.accountManager);
           console.warn('⚠️ Available account managers:', adminData.accountManagers?.map((am: any) => `${am.name}: ${am.email || 'NO EMAIL'}`));
