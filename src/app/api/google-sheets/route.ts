@@ -347,7 +347,15 @@ export async function POST(request: Request) {
           
           // Send email notification using the full Vercel deployment URL
           console.log('📧 Calling send-notification API...');
-          const emailResponse = await fetch(`${process.env.VERCEL_URL}/api/send-notification`, {
+          
+          // Construct the base URL with proper protocol
+          const baseUrl = process.env.VERCEL_URL || 'localhost:3000';
+          const protocol = baseUrl.startsWith('localhost') ? 'http://' : 'https://';
+          const apiUrl = `${protocol}${baseUrl}/api/send-notification`;
+          
+          console.log('🔗 Constructed API URL:', apiUrl);
+          
+          const emailResponse = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
