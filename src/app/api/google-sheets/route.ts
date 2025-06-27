@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 import { Readable } from 'stream';
-import { getAdminData } from '../admin/route';
+import { getAdminData } from '../../../utils/adminConfig';
 
 // Helper function to properly format the private key
 function formatPrivateKey(key: string | undefined): string | undefined {
